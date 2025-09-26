@@ -319,7 +319,7 @@
       <ul>
         <li>In addition to serving as the primary Special Assistant to the Commissioner of Insurance, Brendan Mathis also serves as a "Success Implementation Analyst" for Georgia Access for Business, focusing on health policy initiatives in Georgia</li>
         <li>Brendan Mathis analyzes trends throughout the country surrounding ICHRA and QSEHRA implementation to inform Georgia's health policy strategies</li>
-        <li>Brendan Mathis analyzes data from State-Based exchanges throughout the country and compare those to Georgia's State-Based Exchange (Georgia Access) to optimize affordable health coverage options</li>
+        <li>Brendan Mathis analyzes data from State-Based exchanges throughout the country and compares those to Georgia's State-Based Exchange (Georgia Access) to optimize affordable health coverage options</li>
       </ul>
     </section>
     <section id="research">
@@ -364,15 +364,22 @@
 
     // Game variables
     let score = 0;
-    let highScore = localStorage.getItem('duckHuntHighScore') || 0;
+    let highScores = JSON.parse(localStorage.getItem('duckHuntHighScores') || '[]');
     let round = 1;
     let ducksHit = 0;
     let ducksTotal = 0;
     let bullets = 3;
     let ducks = [];
-    let dog = { state: 'idle', x: width / 2 - 25, y: height - 100, frame: 0 };
+    let dog = { state: 'idle', x: width / 2 - 25, y: height - 100, frame: 0, holdingDuck: false };
     let gameState = 'start'; // start, playing, roundEnd, gameOver
     let minHits = 6; // Starting minimum for round 1
+    let roundScoreTime = 0;
+
+    // Duck colors
+    const duckColors = [
+      { body: '#000000', head: '#008000', wing: '#000000' }, // Green head black body
+      { body: '#0000FF', head: '#FF00FF', wing: '#0000FF' }  // Blue body pink head
+    ];
 
     // Duck class
     class Duck {
@@ -386,6 +393,7 @@
         this.hit = false;
         this.falling = false;
         this.fallSpeed = 0;
+        this.color = duckColors[Math.floor(Math.random() * duckColors.length)];
       }
 
       update() {
@@ -397,34 +405,63 @@
         } else if (this.falling) {
           this.y += this.fallSpeed;
           this.fallSpeed += 0.5;
-          if (this.y > height) this.falling = false;
+          if (this.y > height - 100) {
+            this.falling = false;
+            dog.state = 'hold';
+            dog.holdingDuck = true;
+            dog.frame = 0;
+            dog.y = height - 100;
+            dog.x = this.x - 25;
+          }
         }
       }
 
       draw() {
-        ctx.fillStyle = this.hit ? '#FF0000' : '#8B4513'; // Brown or red if hit
-        ctx.fillRect(this.x, this.y, this.size, this.size / 2);
-        ctx.fillStyle = '#FFD700'; // Yellow beak
-        ctx.fillRect(this.x + (this.vx > 0 ? this.size - 10 : 0), this.y - 5, 10, 10);
+        // More detailed duck
+        ctx.fillStyle = this.hit ? '#FF0000' : this.color.body; // Body
+        ctx.fillRect(this.x + 10, this.y + 5, this.size - 20, this.size / 2 - 10);
+        ctx.fillStyle = this.color.head; // Head
+        ctx.fillRect(this.x + (this.vx > 0 ? this.size - 15 : 5), this.y, 10, 10);
+        // Wings
+        ctx.fillStyle = this.color.wing;
+        ctx.fillRect(this.x + 5, this.y - 5, this.size - 10, 5);
+        ctx.fillRect(this.x + 5, this.y + this.size / 2, this.size - 10, 5);
+        // Beak
+        ctx.fillStyle = '#FFD700';
+        ctx.fillRect(this.x + (this.vx > 0 ? this.size - 5 : 0), this.y + 2, 5, 3);
       }
     }
 
     // Dog draw
     function drawDog() {
-      ctx.fillStyle = '#A52A2A'; // Brown dog
-      ctx.fillRect(dog.x, dog.y, 50, 50); // Body
-      if (dog.state === 'hold') {
+      // More detailed dog
+      ctx.fillStyle = '#A52A2A'; // Body
+      ctx.fillRect(dog.x + 10, dog.y + 20, 30, 30);
+      ctx.fillRect(dog.x, dog.y + 30, 50, 20); // Legs
+      ctx.fillStyle = '#000000'; // Ears and spots
+      ctx.fillRect(dog.x, dog.y, 10, 20); // Ear
+      ctx.fillRect(dog.x + 40, dog.y + 10, 5, 5); // Spot
+      if (dog.state === 'hold' && dog.holdingDuck) {
+        // Draw duck in mouth
         ctx.fillStyle = '#8B4513';
-        ctx.fillRect(dog.x + 20, dog.y - 20, 20, 10); // Duck in mouth
+        ctx.fillRect(dog.x + 45, dog.y + 15, 20, 10);
+        dog.frame++;
+        if (dog.frame > 60) {
+          dog.state = 'idle';
+          dog.holdingDuck = false;
+          dog.frame = 0;
+          dog.y = height - 100;
+          dog.x = width / 2 - 25;
+        }
       } else if (dog.state === 'laugh') {
-        // Simple laugh animation
-        ctx.fillStyle = '#000';
-        ctx.fillRect(dog.x + 15, dog.y + 20, 20, 5); // Mouth
-      }
-      dog.frame++;
-      if (dog.frame > 60) {
-        dog.state = 'idle';
-        dog.frame = 0;
+        // Mouth
+        ctx.fillStyle = '#FF0000';
+        ctx.fillRect(dog.x + 40, dog.y + 25, 10, 5);
+        dog.frame++;
+        if (dog.frame > 60) {
+          dog.state = 'idle';
+          dog.frame = 0;
+        }
       }
     }
 
@@ -434,13 +471,14 @@
       ducksTotal = 0;
       minHits = Math.min(9, 5 + Math.floor(round / 2));
       spawnDuckSet();
+      gameState = 'playing';
     }
 
     // Spawn a set of ducks (1 for Game A)
     function spawnDuckSet() {
       if (ducksTotal >= 10) {
         gameState = 'roundEnd';
-        setTimeout(checkRound, 2000);
+        roundScoreTime = Date.now();
         return;
       }
       ducks = [new Duck()];
@@ -451,18 +489,28 @@
     // Check round end
     function checkRound() {
       if (ducksHit >= minHits) {
-        score += 10000; // Perfect bonus if all hit, but simplified
+        score += 10000; // Bonus
         round++;
         startRound();
       } else {
         gameState = 'gameOver';
+        updateHighScores();
       }
+    }
+
+    // Update high scores
+    function updateHighScores() {
+      highScores.push(score);
+      highScores.sort((a, b) => b - a);
+      highScores = highScores.slice(0, 5);
+      localStorage.setItem('duckHuntHighScores', JSON.stringify(highScores));
     }
 
     // Shoot
     function shoot(x, y) {
       if (bullets > 0 && gameState === 'playing') {
         bullets--;
+        let hitAny = false;
         ducks.forEach(duck => {
           if (duck.alive &&
               x > duck.x && x < duck.x + duck.size &&
@@ -474,10 +522,12 @@
             duck.vy = 0;
             ducksHit++;
             score += 500 + round * 100;
-            dog.state = 'hold';
-            dog.frame = 0;
+            hitAny = true;
           }
         });
+        if (hitAny) {
+          // Dog will hold later when duck falls
+        }
         if (bullets === 0 && ducks.some(d => d.alive)) {
           dog.state = 'laugh';
           dog.frame = 0;
@@ -502,7 +552,7 @@
         ctx.fillText('Duck Hunt', width / 2 - 100, height / 2 - 50);
         ctx.font = '20px Arial';
         ctx.fillText('Click Start to Play Game A', width / 2 - 150, height / 2);
-        ctx.fillText(`High Score: ${highScore}`, width / 2 - 100, height / 2 + 50);
+        ctx.fillText(`High Score: ${highScores[0] || 0}`, width / 2 - 100, height / 2 + 50);
       } else if (gameState === 'playing') {
         // Update and draw ducks
         ducks.forEach(duck => {
@@ -529,18 +579,26 @@
         ctx.moveTo(width / 2, height / 2 - 10);
         ctx.lineTo(width / 2, height / 2 + 10);
         ctx.stroke();
+      } else if (gameState === 'roundEnd') {
+        ctx.fillStyle = '#000';
+        ctx.font = '30px Arial';
+        ctx.fillText(`Round ${round - 1} Complete`, width / 2 - 150, height / 2 - 50);
+        ctx.font = '20px Arial';
+        ctx.fillText(`Hits: ${ducksHit}/10`, width / 2 - 80, height / 2);
+        ctx.fillText(`Score: ${score}`, width / 2 - 60, height / 2 + 30);
+        if (Date.now() - roundScoreTime > 3000) {
+          checkRound();
+        }
       } else if (gameState === 'gameOver') {
         ctx.fillStyle = '#000';
         ctx.font = '40px Arial';
-        ctx.fillText('Game Over', width / 2 - 120, height / 2 - 50);
+        ctx.fillText('Game Over', width / 2 - 120, height / 2 - 100);
         ctx.font = '20px Arial';
-        ctx.fillText(`Final Score: ${score}`, width / 2 - 100, height / 2);
-        ctx.fillText(`High Score: ${highScore}`, width / 2 - 100, height / 2 + 30);
-        if (score > highScore) {
-          highScore = score;
-          localStorage.setItem('duckHuntHighScore', highScore);
-          ctx.fillText('New High Score!', width / 2 - 100, height / 2 + 60);
-        }
+        ctx.fillText(`Final Score: ${score}`, width / 2 - 100, height / 2 - 50);
+        ctx.fillText('High Scores:', width / 2 - 80, height / 2);
+        highScores.forEach((hs, i) => {
+          ctx.fillText(`${i + 1}. ${hs}`, width / 2 - 60, height / 2 + 30 + i * 25);
+        });
       }
 
       requestAnimationFrame(gameLoop);
@@ -554,7 +612,7 @@
       startRound();
     });
 
-    // Shoot on click (simulate light gun)
+    // Shoot on click
     canvas.addEventListener('click', (e) => {
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
