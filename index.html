@@ -37,6 +37,25 @@
       border-right: 20px solid transparent;
       border-top: 20px solid #003366;
     }
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .headshot {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      overflow: hidden;
+      margin-right: 30px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      border: none;
+    }
+    .header-text {
+      text-align: left;
+    }
     header h1 {
       margin: 0;
       font-size: 3em;
@@ -180,6 +199,16 @@
       header {
         padding: 60px 15px 40px;
       }
+      .header-content {
+        flex-direction: column;
+      }
+      .headshot {
+        margin-right: 0;
+        margin-bottom: 20px;
+      }
+      .header-text {
+        text-align: center;
+      }
       header h1 {
         font-size: 2.5em;
       }
@@ -205,10 +234,14 @@
 </head>
 <body>
   <header>
-    <h1>Brendan Mathis</h1>
-    <p>Health Policy | Government Affairs</p>
+    <div class="header-content">
+      <iframe src="headshot.pdf#toolbar=0&navpanes=0&scrollbar=0&view=Fit" class="headshot" frameborder="0"></iframe>
+      <div class="header-text">
+        <h1>Brendan Mathis</h1>
+        <p>Health Policy | Government Affairs</p>
+      </div>
+    </div>
   </header>
- 
   <nav>
     <a href="#">Home</a>
     <a href="#about">About Me</a>
