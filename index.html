@@ -271,18 +271,43 @@
     /* Game Styles */
     #game {
       text-align: center;
-      padding: 40px;
+      padding: 40px 0;
+      background-color: #f9fafb;
     }
     #gameCanvas {
-      border: 2px solid #000;
+      border: 2px solid #003366;
       background-color: #87CEEB; /* Sky blue */
       cursor: crosshair;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      border-radius: 8px;
+    }
+    #game-container {
+      position: relative;
+      display: inline-block;
     }
     #startButton {
-      margin-top: 20px;
-      padding: 10px 20px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      margin-top: 0;
+      padding: 12px 24px;
       font-size: 18px;
       cursor: pointer;
+      background-color: #0077b5;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      transition: background-color 0.3s ease;
+      z-index: 10;
+    }
+    #startButton:hover {
+      background-color: #006699;
+    }
+    #game p {
+      margin-top: 15px;
+      font-size: 1em;
+      color: #004080;
     }
   </style>
 </head>
@@ -341,14 +366,16 @@
     </section>
     <section id="contact">
       <h2>Contact Brendan Mathis for Health Policy Inquiries in Georgia</h2>
-      <p>For professional inquiries, please email: <a href="mailto:bmathisgeorgia@gmail.com">bmathisgeorgia@gmail.com</a></p>
-      <p>Atlanta, GA</p>
+      <p>For professional inquiries related to health policy, government affairs, ICHRA, QSEHRA, or insurance regulation in Georgia, please email: <a href="mailto:bmathisgeorgia@gmail.com">bmathisgeorgia@gmail.com</a></p>
+      <p>Address: Atlanta, GA 30334</p>
     </section>
   </div>
   <section id="game">
     <h2>Duck Hunt</h2>
-    <canvas id="gameCanvas" width="640" height="480"></canvas>
-    <button id="startButton">Start Game</button>
+    <div id="game-container">
+      <canvas id="gameCanvas" width="640" height="480"></canvas>
+      <button id="startButton">Start Game</button>
+    </div>
     <p>Click to shoot!</p>
   </section>
   <footer>
@@ -360,23 +387,17 @@
     const ctx = canvas.getContext('2d');
     const width = canvas.width;
     const height = canvas.height;
-
     // Load images
     const duckImg = new Image();
     duckImg.src = 'duck.png';
-
     const duck2Img = new Image();
     duck2Img.src = 'duck2.png';
-
     const dogImg = new Image();
     dogImg.src = 'duckdog.png';
-
     const treeImg = new Image();
     treeImg.src = 'ducktree.png';
-
     const startImg = new Image();
     startImg.src = 'duckstart.jpg';
-
     // Game variables
     let score = 0;
     let highScores = JSON.parse(localStorage.getItem('duckHuntHighScores') || '[]');
@@ -389,7 +410,6 @@
     let gameState = 'start'; // start, playing, roundEnd, gameOver
     let minHits = 6; // Starting minimum for round 1
     let roundScoreTime = 0;
-
     // Duck class
     class Duck {
       constructor() {
@@ -404,7 +424,6 @@
         this.fallSpeed = 0;
         this.img = Math.random() < 0.5 ? duckImg : duck2Img;
       }
-
       update() {
         if (this.alive) {
           this.x += this.vx;
@@ -424,12 +443,10 @@
           }
         }
       }
-
       draw() {
         ctx.drawImage(this.img, this.x, this.y, this.size, this.size / 2);
       }
     }
-
     // Dog draw
     function drawDog() {
       ctx.drawImage(dogImg, dog.x, dog.y, 50, 50);
@@ -453,12 +470,10 @@
         }
       }
     }
-
     // Draw tree
     function drawTree() {
       ctx.drawImage(treeImg, 100, height - 200, 100, 150); // Adjust size as needed
     }
-
     // Start new round
     function startRound() {
       ducksHit = 0;
@@ -466,8 +481,8 @@
       minHits = Math.min(9, 5 + Math.floor(round / 2));
       spawnDuckSet();
       gameState = 'playing';
+      document.getElementById('startButton').style.display = 'none';
     }
-
     // Spawn a set of ducks (1 for Game A)
     function spawnDuckSet() {
       if (ducksTotal >= 10) {
@@ -479,7 +494,6 @@
       bullets = 3;
       ducksTotal++;
     }
-
     // Check round end
     function checkRound() {
       if (ducksHit >= minHits) {
@@ -491,7 +505,6 @@
         updateHighScores();
       }
     }
-
     // Update high scores
     function updateHighScores() {
       highScores.push(score);
@@ -499,7 +512,6 @@
       highScores = highScores.slice(0, 5);
       localStorage.setItem('duckHuntHighScores', JSON.stringify(highScores));
     }
-
     // Shoot
     function shoot(x, y) {
       if (bullets > 0 && gameState === 'playing') {
@@ -531,20 +543,21 @@
         }
       }
     }
-
     // Game loop
     function gameLoop() {
       ctx.clearRect(0, 0, width, height);
-
       // Draw background
       ctx.fillStyle = '#228B22'; // Grass
       ctx.fillRect(0, height - 50, width, 50);
-
       drawTree();
-
       if (gameState === 'start') {
         ctx.drawImage(startImg, 0, 0, width, height);
         ctx.fillStyle = '#000';
+        ctx.font = '40px Arial';
+        ctx.fillText('Duck Hunt', width / 2 - 100, height / 2 - 50);
+        ctx.font = '20px Arial';
+        ctx.fillText('Click Start to Play Game A', width / 2 - 150, height / 2);
+        ctx.fillText(`High Score: ${highScores[0] || 0}`, width / 2 - 100, height / 2 + 50);
       } else if (gameState === 'playing') {
         // Update and draw ducks
         ducks.forEach(duck => {
@@ -552,9 +565,7 @@
           duck.draw();
         });
         ducks = ducks.filter(d => d.alive || d.falling);
-
         drawDog();
-
         // Draw score and info
         ctx.fillStyle = '#000';
         ctx.font = '20px Arial';
@@ -562,7 +573,6 @@
         ctx.fillText(`Round: ${round}`, 10, 60);
         ctx.fillText(`Hits: ${ducksHit}/10`, 10, 90);
         ctx.fillText(`Bullets: ${bullets}`, 10, 120);
-
         // Crosshair
         ctx.strokeStyle = '#FF0000';
         ctx.beginPath();
@@ -592,10 +602,8 @@
           ctx.fillText(`${i + 1}. ${hs}`, width / 2 - 60, height / 2 + 30 + i * 25);
         });
       }
-
       requestAnimationFrame(gameLoop);
     }
-
     // Start button
     document.getElementById('startButton').addEventListener('click', () => {
       gameState = 'playing';
@@ -603,7 +611,6 @@
       round = 1;
       startRound();
     });
-
     // Shoot on click
     canvas.addEventListener('click', (e) => {
       const rect = canvas.getBoundingClientRect();
@@ -611,7 +618,6 @@
       const y = e.clientY - rect.top;
       shoot(x, y);
     });
-
     // Start game loop
     gameLoop();
   </script>
