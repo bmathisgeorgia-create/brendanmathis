@@ -5,60 +5,153 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Brendan Mathis | Biography</title>
   <meta name="description" content="Professional biography of Brendan Mathis, focused on health policy and government affairs.">
-  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <style>
+    html {
+      scroll-behavior: smooth;
+    }
     body {
-      font-family: Tahoma, sans-serif;
+      font-family: 'Roboto', sans-serif;
       margin: 0;
-      background-color: #f4f4f4;
+      background-color: #f8f9fa;
       color: #333;
+      line-height: 1.6;
     }
     header {
       background-color: #004080;
       color: white;
-      padding: 20px;
+      padding: 60px 20px;
       text-align: center;
+      position: relative;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2.5em;
+    }
+    header p {
+      margin: 10px 0 0;
+      font-size: 1.2em;
+      font-style: italic;
     }
     nav {
       background-color: #003366;
-      padding: 10px;
+      padding: 15px;
       text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
     nav a {
       color: white;
-      margin: 0 15px;
+      margin: 0 20px;
       text-decoration: none;
       font-weight: bold;
+      transition: color 0.3s ease;
+    }
+    nav a:hover {
+      color: #ffd700;
     }
     .container {
-      max-width: 900px;
-      margin: 40px auto;
-      padding: 0 20px;
+      max-width: 1100px;
+      margin: 60px auto;
+      padding: 0 30px;
       background-color: white;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      border-radius: 8px;
+    }
+    section {
+      margin-bottom: 50px;
+      padding: 30px;
+      border-bottom: 1px solid #eee;
+    }
+    section:last-child {
+      border-bottom: none;
     }
     h1, h2 {
       color: #004080;
     }
+    h2 {
+      font-size: 1.8em;
+      margin-bottom: 20px;
+      position: relative;
+      padding-bottom: 10px;
+    }
+    h2::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 50px;
+      height: 3px;
+      background-color: #0077b5;
+    }
+    p {
+      margin-bottom: 15px;
+    }
+    ul {
+      list-style-type: disc;
+      padding-left: 20px;
+    }
+    li {
+      margin-bottom: 10px;
+    }
     .linkedin-button {
       display: inline-block;
-      margin-top: 15px;
-      padding: 10px 20px;
+      margin-top: 20px;
+      padding: 12px 25px;
       background-color: #0077b5;
       color: white;
       text-decoration: none;
       border-radius: 5px;
       font-weight: bold;
+      transition: background-color 0.3s ease, transform 0.3s ease;
     }
     .linkedin-button:hover {
       background-color: #005f8d;
+      transform: translateY(-2px);
     }
     footer {
       background-color: #004080;
       color: white;
       text-align: center;
-      padding: 20px;
-      margin-top: 40px;
+      padding: 30px;
+      margin-top: 60px;
+    }
+    footer a {
+      color: #ffd700;
+      text-decoration: none;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+    /* Resume Section */
+    #resume iframe {
+      width: 100%;
+      height: 800px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      margin-top: 20px;
+    }
+    /* Media Queries for Responsiveness */
+    @media (max-width: 768px) {
+      header {
+        padding: 40px 15px;
+      }
+      header h1 {
+        font-size: 2em;
+      }
+      nav a {
+        margin: 0 10px;
+        font-size: 0.9em;
+      }
+      .container {
+        padding: 0 15px;
+        margin: 30px auto;
+      }
+      section {
+        padding: 20px;
+      }
     }
   </style>
 </head>
@@ -67,15 +160,14 @@
     <h1>Brendan Mathis</h1>
     <p>Health Policy | Government Affairs</p>
   </header>
-  
-
+ 
   <nav>
     <a href="#">Home</a>
     <a href="#about">About</a>
     <a href="#projects">Projects</a>
+    <a href="#resume">Resume</a>
     <a href="#contact">Contact</a>
   </nav>
-
   <div class="container">
     <section id="about">
       <h2>About Brendan</h2>
@@ -84,7 +176,6 @@
       <p>I work closely with Georgia Access for Business (GAFB), focusing on the implementation of Individual Coverage Health Reimbursement Arrangements (ICHRA) and Qualified Small Employer Health Reimbursement Arrangements (QSEHRA). I ensure successful project execution by collaborating with insurers, brokers, and employers to expand access to affordable health coverage for small businesses and individuals throughout Georgia.</p>
       <a class="linkedin-button" href="https://www.linkedin.com/in/brendanlmathis" target="_blank">Connect on LinkedIn</a>
     </section>
-
     <section id="projects">
       <h2>Current Projects</h2>
       <ul>
@@ -93,28 +184,21 @@
         <li>I analyze data from State-Based exchanges throughout the country and compare those to Georgia's State-Based Exchange (Georgia Access).</li>
       </ul>
     </section>
-
+    <section id="resume">
+      <h2>View My Resume</h2>
+      <iframe src="Brendan_Resume.pdf" width="100%" height="800px" style="border: none;">
+        PDF Unavailable.
+        <a href="Brendan_Resume.pdf" target="_blank">Click here to view the resume.</a>
+      </iframe>
+    </section>
     <section id="contact">
       <h2>Contact</h2>
       <p>For professional inquiries, please email: <a href="mailto:bmathisgeorgia@gmail.com">bmathisgeorgia@gmail.com</a></p>
     </section>
   </div>
-
   <footer>
     <p>&copy; 2025 Brendan Mathis. All rights reserved.</p>
-    <p>Website: <a href="https://brendanmathis.com" style="color: white;">brendanmathis.com</a></p>
+    <p>Website: <a href="https://brendanmathis.com">brendanmathis.com</a></p>
   </footer>
 </body>
-
-      <!-- Resume Viewer Section -->
-<section id="resume">
-  <h2>View My Resume</h2>
-  <iframe src="Brendan_Resume.pdf" width="100%" height="800px" style="border: none;">
-    PDF Unavailable. 
-    <a href="Brendan_Resume.pdf" target="_blank">Click here to view the resume.</a>
-  </iframe>
-  
-</section>
 </html>
-
-
