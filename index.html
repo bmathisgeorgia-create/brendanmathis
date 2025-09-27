@@ -53,37 +53,38 @@
     header {
       background: linear-gradient(to bottom, #004080, #003366);
       color: white;
-      padding: 80px 20px 60px;
+      padding: 4rem 1rem 3rem;
       text-align: center;
       position: relative;
     }
     header::after {
       content: '';
       position: absolute;
-      bottom: -20px;
+      bottom: -1rem;
       left: 50%;
       transform: translateX(-50%);
       width: 0;
       height: 0;
-      border-left: 20px solid transparent;
-      border-right: 20px solid transparent;
-      border-top: 20px solid #003366;
+      border-left: 1rem solid transparent;
+      border-right: 1rem solid transparent;
+      border-top: 1rem solid #003366;
     }
     .header-content {
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      max-width: 800px;
+      max-width: 1000px;
       margin: 0 auto;
     }
     .headshot {
-      width: 150px;
-      height: 150px;
+      width: 120px;
+      height: 120px;
       border-radius: 50%;
       overflow: hidden;
-      margin-right: 30px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-      border: none;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      border: 2px solid white;
     }
     .headshot img {
       width: 100%;
@@ -91,121 +92,139 @@
       object-fit: cover;
     }
     .header-text {
-      text-align: left;
+      text-align: center;
     }
     header h1 {
       margin: 0;
-      font-size: 3em;
+      font-size: clamp(2rem, 5vw, 2.5rem);
       font-weight: 700;
-      letter-spacing: -1px;
+      letter-spacing: -0.5px;
     }
     header p {
-      margin: 15px 0 0;
-      font-size: 1.3em;
+      margin: 1rem 0 0;
+      font-size: clamp(1rem, 3vw, 1.2rem);
       font-weight: 300;
       opacity: 0.9;
     }
     nav {
       background-color: #003366;
-      padding: 15px;
+      padding: 1rem;
       text-align: center;
       position: sticky;
       top: 0;
       z-index: 1000;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .nav-toggle {
+      display: none;
+      font-size: 1.5rem;
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      position: absolute;
+      right: 1rem;
+      top: 1rem;
+    }
+    .nav-menu {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
     }
     nav a {
       color: white;
-      margin: 0 25px;
+      margin: 0 1rem;
+      padding: 0.5rem;
       text-decoration: none;
       font-weight: 600;
-      font-size: 1em;
-      transition: color 0.3s ease, opacity 0.3s ease;
+      font-size: clamp(0.9rem, 2.5vw, 1rem);
+      transition: color 0.3s ease;
     }
     nav a:hover {
       color: #a0d4ff;
-      opacity: 1;
     }
     .container {
-      max-width: 1200px;
-      margin: 80px auto 60px;
-      padding: 0 40px;
+      max-width: 90%;
+      margin: 3rem auto;
+      padding: 1.5rem;
       background-color: white;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.05);
       border-radius: 12px;
-      overflow: hidden;
     }
     section {
-      margin-bottom: 60px;
-      padding: 40px;
+      margin-bottom: 2rem;
+      padding: 2rem;
       border-bottom: 1px solid #edf2f7;
     }
     section:last-child {
       border-bottom: none;
-      margin-bottom: 0;
     }
     h2 {
       color: #004080;
-      font-size: 2em;
-      margin-bottom: 25px;
-      position: relative;
+      font-size: clamp(1.5rem, 4vw, 1.8rem);
+      margin-bottom: 1.5rem;
       font-weight: 600;
-      letter-spacing: -0.5px;
+      position: relative;
+      text-align: center;
     }
     h2::after {
       content: '';
       position: absolute;
-      left: 0;
-      bottom: -10px;
-      width: 60px;
-      height: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: -0.5rem;
+      width: 3rem;
+      height: 0.2rem;
       background-color: #0077b5;
       border-radius: 2px;
     }
     p {
-      margin-bottom: 20px;
-      font-size: 1.05em;
+      margin-bottom: 1.2rem;
+      font-size: clamp(0.95rem, 2.5vw, 1rem);
+      text-align: justify;
     }
     ul {
       list-style-type: none;
       padding-left: 0;
+      text-align: left;
     }
     li {
-      margin-bottom: 15px;
+      margin-bottom: 1rem;
+      padding-left: 1.5rem;
       position: relative;
-      padding-left: 25px;
     }
     li::before {
       content: '•';
       position: absolute;
       left: 0;
       color: #0077b5;
-      font-size: 1.2em;
+      font-size: 1.2rem;
     }
     .linkedin-button {
-      display: inline-block;
-      margin-top: 25px;
-      padding: 14px 30px;
+      display: block;
+      width: fit-content;
+      margin: 1.5rem auto;
+      padding: 0.8rem 2rem;
       background-color: #0077b5;
       color: white;
       text-decoration: none;
       border-radius: 6px;
       font-weight: 600;
+      text-align: center;
       transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
-      box-shadow: 0 4px 6px rgba(0,119,181,0.2);
+      box-shadow: 0 4px 8px rgba(0,119,181,0.2);
     }
     .linkedin-button:hover {
       background-color: #006699;
-      transform: translateY(-3px);
+      transform: translateY(-2px);
       box-shadow: 0 6px 12px rgba(0,119,181,0.3);
     }
     footer {
       background-color: #004080;
       color: white;
       text-align: center;
-      padding: 40px;
-      margin-top: 80px;
-      font-size: 0.95em;
+      padding: 2rem;
+      font-size: clamp(0.85rem, 2.5vw, 0.95rem);
     }
     footer a {
       color: #a0d4ff;
@@ -215,84 +234,66 @@
     footer a:hover {
       color: white;
     }
-    /* Resume and Research Sections */
+    /* Responsive Social Feed */
+    .elfsight-app-1e9cea52-02a2-4903-81f3-94a9a4894dbb {
+      width: 100%;
+      margin: 1rem auto;
+    }
+    /* Research Section */
+    .iframe-container {
+      display: flex;
+      justify-content: center;
+      margin: 1.5rem 0;
+    }
     #research iframe,
     .research-iframe {
       width: 100%;
-      height: 800px;
+      max-width: 800px;
+      height: 250px;
       border: none;
       border-radius: 8px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-      margin-top: 25px;
+      display: block;
+      margin: 0 auto;
       loading: lazy;
     }
-    #research h2 {
-      margin-top: 40px;
+    #research h3 {
+      font-size: clamp(1.2rem, 3vw, 1.4rem);
+      text-align: center;
+      margin: 0.8rem auto;
     }
-    #research h2:first-child {
-      margin-top: 0;
-    }
-    /* Media Queries for Responsiveness */
-    @media (max-width: 768px) {
-      header {
-        padding: 60px 15px 40px;
-      }
-      .header-content {
-        flex-direction: column;
-      }
-      .headshot {
-        margin-right: 0;
-        margin-bottom: 20px;
-      }
-      .header-text {
-        text-align: center;
-      }
-      header h1 {
-        font-size: 2.5em;
-      }
-      nav {
-        padding: 12px;
-      }
-      nav a {
-        margin: 0 15px;
-        font-size: 0.95em;
-      }
-      .container {
-        padding: 0 20px;
-        margin: 50px auto 40px;
-      }
-      section {
-        padding: 30px 20px;
-      }
-      h2 {
-        font-size: 1.8em;
-      }
-    }
-    /* Game Styles */
+    /* Game Section */
     #game {
       text-align: center;
-      padding: 40px 0;
+      padding: 2rem 0;
       background-color: #f9fafb;
     }
     #gameCanvas {
+      width: 100%;
+      max-width: 640px;
+      height: auto;
+      aspect-ratio: 4 / 3;
       border: 2px solid #003366;
-      background-color: #87CEEB; /* Sky blue */
+      background-color: #87CEEB;
       cursor: crosshair;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       border-radius: 8px;
+      display: block;
+      margin: 0 auto;
     }
     #game-container {
       position: relative;
       display: inline-block;
+      width: 100%;
+      max-width: 640px;
     }
     #startButton {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      margin-top: 0;
-      padding: 12px 24px;
-      font-size: 18px;
+      padding: 0.8rem 1.5rem;
+      font-size: clamp(1rem, 3vw, 1.2rem);
       cursor: pointer;
       background-color: #0077b5;
       color: white;
@@ -305,9 +306,59 @@
       background-color: #006699;
     }
     #game p {
-      margin-top: 15px;
-      font-size: 1em;
+      margin-top: 1rem;
+      font-size: clamp(0.9rem, 2.5vw, 1rem);
       color: #004080;
+      text-align: center;
+    }
+    /* Hamburger Menu for Mobile */
+    @media (max-width: 768px) {
+      .nav-toggle {
+        display: block;
+      }
+      .nav-menu {
+        display: none;
+        flex-direction: column;
+        background-color: #003366;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        padding: 1rem 0;
+      }
+      .nav-menu.active {
+        display: flex;
+      }
+      nav a {
+        margin: 0.5rem 0;
+        font-size: 1rem;
+      }
+      header {
+        padding: 2.5rem 1rem 2rem;
+      }
+      .container {
+        margin: 2rem auto;
+        padding: 1rem;
+      }
+      section {
+        padding: 1.5rem;
+      }
+      #research iframe,
+      .research-iframe {
+        height: 200px;
+      }
+    }
+    @media (min-width: 769px) {
+      .header-content {
+        flex-direction: row;
+        gap: 2rem;
+      }
+      .header-text {
+        text-align: left;
+      }
+      .headshot {
+        margin-bottom: 0;
+      }
     }
   </style>
 </head>
@@ -324,23 +375,27 @@
     </div>
   </header>
   <nav>
-    <a href="#">Home</a>
-    <a href="#about">About</a>
-    <a href="#role">Current Role</a>
-    <a href="#research">Research</a>
-    <a href="#contact">Contact</a>
+    <button class="nav-toggle" aria-label="Toggle navigation menu">☰</button>
+    <div class="nav-menu">
+      <a href="#">Home</a>
+      <a href="#about">About</a>
+      <a href="#role">Current Role</a>
+      <a href="#research">Research</a>
+      <a href="#contact">Contact</a>
+    </div>
   </nav>
   <div class="container">
     <section id="about">
-      <h2>About Brendan Mathis - Health Policy Expert in Georgia</h2>
+      <h2>About Brendan</h2>
       <p>Brendan Mathis is passionate about healthcare and committed to improving health policy in Georgia.</p>
       <p>As a health policy and government affairs specialist in Georgia, Brendan Mathis serves as the primary Special Assistant to Commissioner John F. King at the Georgia Office of Insurance and Safety Fire Commissioner. Brendan Mathis provides comprehensive support to the Commissioner across legislative, administrative, and constituent affairs, acting as a key liaison to ensure seamless coordination of departmental priorities. Brendan Mathis's legislative responsibilities include engaging with the Georgia General Assembly to advocate for policies that enhance insurance regulation, consumer protections, and fire safety standards in Georgia.</p>
       <p>In his role, Brendan Mathis works closely with Georgia Access for Business (GAFB), focusing on the implementation of Individual Coverage Health Reimbursement Arrangements (ICHRA) and Qualified Small Employer Health Reimbursement Arrangements (QSEHRA). Brendan Mathis ensures successful project execution by collaborating with insurers, brokers, and employers to expand access to affordable health coverage for small businesses and individuals throughout Georgia. Brendan Mathis's expertise in health policy, ICHRA implementation, and QSEHRA strategies helps drive meaningful improvements in Georgia's healthcare landscape.</p>
       <a class="linkedin-button" href="https://www.linkedin.com/in/brendanlmathis" target="_blank">Connect on LinkedIn</a>
     </section>
-    <!-- Elfsight Social Feed | Untitled Social Feed -->
-<script src="https://elfsightcdn.com/platform.js" async></script>
-<div class="elfsight-app-1e9cea52-02a2-4903-81f3-94a9a4894dbb" data-elfsight-app-lazy></div>
+    <section id="social-feed">
+      <h2>Social Updates</h2>
+      <div class="elfsight-app-1e9cea52-02a2-4903-81f3-94a9a4894dbb" data-elfsight-app-lazy></div>
+    </section>
     <section id="role">
       <h2>Current Role in Health Policy and Government Affairs</h2>
       <ul>
@@ -350,30 +405,36 @@
       </ul>
     </section>
     <section id="game">
-    <h2>Duck Hunt</h2>
-    <div id="game-container">
-      <canvas id="gameCanvas" width="640" height="480"></canvas>
-      <button id="startButton">Start Game</button>
-    </div>
-    <p>Click to shoot!</p>
-  </section>
+      <h2>Duck Hunt</h2>
+      <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <button id="startButton">Start Game</button>
+      </div>
+      <p>Click to shoot!</p>
+    </section>
     <section id="research">
       <h2>Capstone Research</h2>
       <h3>Capstone - Political Science Thesis</h3>
-      <iframe class="research-iframe" src="Gov_Thesis.pdf" loading="lazy">
-        PDF Unavailable.
-        <a href="Gov_Thesis.pdf" target="_blank">Click here to view.</a>
-      </iframe>
+      <div class="iframe-container">
+        <iframe class="research-iframe" src="Gov_Thesis.pdf" loading="lazy">
+          PDF Unavailable.
+          <a href="Gov_Thesis.pdf" target="_blank">Click here to view.</a>
+        </iframe>
+      </div>
       <h3>Research Project - Latin American Foreign Affairs</h3>
-      <iframe class="research-iframe" src="Gov2_Thesis.pdf" loading="lazy">
-        PDF Unavailable.
-        <a href="Gov2_Thesis.pdf" target="_blank">Click here to view.</a>
-      </iframe>
+      <div class="iframe-container">
+        <iframe class="research-iframe" src="Gov2_Thesis.pdf" loading="lazy">
+          PDF Unavailable.
+          <a href="Gov2_Thesis.pdf" target="_blank">Click here to view.</a>
+        </iframe>
+      </div>
       <h3>Capstone - Theology Thesis</h3>
-      <iframe class="research-iframe" src="Religion_Thesis.pdf" loading="lazy">
-        PDF Unavailable.
-        <a href="Religion_Thesis.pdf" target="_blank">Click here to view.</a>
-      </iframe>
+      <div class="iframe-container">
+        <iframe class="research-iframe" src="Religion_Thesis.pdf" loading="lazy">
+          PDF Unavailable.
+          <a href="Religion_Thesis.pdf" target="_blank">Click here to view.</a>
+        </iframe>
+      </div>
     </section>
     <section id="contact">
       <h2>Contact</h2>
@@ -381,16 +442,33 @@
       <p>Atlanta, GA</p>
     </section>
   </div>
-  
   <footer>
     <p>&copy; 2025 Brendan Mathis. All rights reserved.</p>
     <p>Website: <a href="https://brendanmathis.com">brendanmathis.com</a> - Health Policy and Government Affairs in Georgia</p>
   </footer>
+  <script src="https://elfsightcdn.com/platform.js" async></script>
   <script>
+    // Hamburger menu toggle
+    const navToggle = document.querySelector('.nav-toggle');
+    const navMenu = document.querySelector('.nav-menu');
+    navToggle.addEventListener('click', () => {
+      navMenu.classList.toggle('active');
+    });
+
+    // Game logic
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
+    const updateCanvasSize = () => {
+      const maxWidth = Math.min(window.innerWidth * 0.9, 640);
+      canvas.width = maxWidth;
+      canvas.height = maxWidth * 3 / 4;
+    };
+    updateCanvasSize();
+    window.addEventListener('resize', updateCanvasSize);
+
     const width = canvas.width;
     const height = canvas.height;
+
     // Load images
     const duckImg = new Image();
     duckImg.src = 'duck.png';
@@ -402,6 +480,7 @@
     treeImg.src = 'ducktree.png';
     const startImg = new Image();
     startImg.src = 'duckstart.jpg';
+
     // Game variables
     let score = 0;
     let highScores = JSON.parse(localStorage.getItem('duckHuntHighScores') || '[]');
@@ -411,17 +490,17 @@
     let bullets = 3;
     let ducks = [];
     let dog = { state: 'idle', x: width / 2 - 25, y: height - 100, frame: 0, holdingDuck: false };
-    let gameState = 'start'; // start, playing, roundEnd, gameOver
-    let minHits = 6; // Starting minimum for round 1
+    let gameState = 'start';
+    let minHits = 6;
     let roundScoreTime = 0;
-    // Duck class
+
     class Duck {
       constructor() {
         this.x = Math.random() < 0.5 ? -50 : width + 50;
         this.y = Math.random() * (height / 2) + 50;
         this.vx = (this.x < 0 ? 1 : -1) * (Math.random() * 2 + 2);
         this.vy = Math.random() * 2 - 1;
-        this.size = 40;
+        this.size = Math.min(width / 16, 40);
         this.alive = true;
         this.hit = false;
         this.falling = false;
@@ -451,11 +530,10 @@
         ctx.drawImage(this.img, this.x, this.y, this.size, this.size / 2);
       }
     }
-    // Dog draw
+
     function drawDog() {
       ctx.drawImage(dogImg, dog.x, dog.y, 50, 50);
       if (dog.state === 'hold' && dog.holdingDuck) {
-        // Draw small duck in front
         ctx.drawImage(duckImg, dog.x + 45, dog.y + 15, 20, 10);
         dog.frame++;
         if (dog.frame > 60) {
@@ -466,7 +544,6 @@
           dog.x = width / 2 - 25;
         }
       } else if (dog.state === 'laugh') {
-        // Simple laugh, perhaps rotate or something, but keep simple
         dog.frame++;
         if (dog.frame > 60) {
           dog.state = 'idle';
@@ -474,11 +551,11 @@
         }
       }
     }
-    // Draw tree
+
     function drawTree() {
-      ctx.drawImage(treeImg, 100, height - 200, 100, 150); // Adjust size as needed
+      ctx.drawImage(treeImg, 100, height - 200, 100, 150);
     }
-    // Start new round
+
     function startRound() {
       ducksHit = 0;
       ducksTotal = 0;
@@ -487,7 +564,7 @@
       gameState = 'playing';
       document.getElementById('startButton').style.display = 'none';
     }
-    // Spawn a set of ducks (1 for Game A)
+
     function spawnDuckSet() {
       if (ducksTotal >= 10) {
         gameState = 'roundEnd';
@@ -498,10 +575,10 @@
       bullets = 3;
       ducksTotal++;
     }
-    // Check round end
+
     function checkRound() {
       if (ducksHit >= minHits) {
-        score += 10000; // Bonus
+        score += 10000;
         round++;
         startRound();
       } else {
@@ -509,14 +586,14 @@
         updateHighScores();
       }
     }
-    // Update high scores
+
     function updateHighScores() {
       highScores.push(score);
       highScores.sort((a, b) => b - a);
       highScores = highScores.slice(0, 5);
       localStorage.setItem('duckHuntHighScores', JSON.stringify(highScores));
     }
-    // Shoot
+
     function shoot(x, y) {
       if (bullets > 0 && gameState === 'playing') {
         bullets--;
@@ -538,7 +615,7 @@
         if (hitAny) {
           // Dog will hold later
         }
-        if (bullets === 0 && ducks.some(d => d.alive)) {
+        if (bullets == 0 && ducks.some(d => d.alive)) {
           dog.state = 'laugh';
           dog.frame = 0;
           setTimeout(spawnDuckSet, 2000);
@@ -547,77 +624,82 @@
         }
       }
     }
-    // Game loop
+
     function gameLoop() {
-      ctx.clearRect(0, 0, width, height);
-      // Draw background
-      ctx.fillStyle = '#228B22'; // Grass
-      ctx.fillRect(0, height - 50, width, 50);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#228B22';
+      ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
       drawTree();
       if (gameState === 'start') {
-        ctx.drawImage(startImg, 0, 0, width, height);
+        ctx.drawImage(startImg, 0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#000';
       } else if (gameState === 'playing') {
-        // Update and draw ducks
         ducks.forEach(duck => {
           duck.update();
           duck.draw();
         });
         ducks = ducks.filter(d => d.alive || d.falling);
         drawDog();
-        // Draw score and info
         ctx.fillStyle = '#000';
-        ctx.font = '20px Arial';
+        ctx.font = `${Math.min(canvas.width / 30, 20)}px Arial`;
         ctx.fillText(`Score: ${score}`, 10, 30);
         ctx.fillText(`Round: ${round}`, 10, 60);
         ctx.fillText(`Hits: ${ducksHit}/10`, 10, 90);
         ctx.fillText(`Bullets: ${bullets}`, 10, 120);
-        // Crosshair
         ctx.strokeStyle = '#FF0000';
         ctx.beginPath();
-        ctx.moveTo(width / 2 - 10, height / 2);
-        ctx.lineTo(width / 2 + 10, height / 2);
-        ctx.moveTo(width / 2, height / 2 - 10);
-        ctx.lineTo(width / 2, height / 2 + 10);
+        ctx.moveTo(canvas.width / 2 - 10, canvas.height / 2);
+        ctx.lineTo(canvas.width / 2 + 10, canvas.height / 2);
+        ctx.moveTo(canvas.width / 2, canvas.height / 2 - 10);
+        ctx.lineTo(canvas.width / 2, canvas.height / 2 + 10);
         ctx.stroke();
       } else if (gameState === 'roundEnd') {
         ctx.fillStyle = '#000';
-        ctx.font = '30px Arial';
-        ctx.fillText(`Round ${round - 1} Complete`, width / 2 - 150, height / 2 - 50);
-        ctx.font = '20px Arial';
-        ctx.fillText(`Hits: ${ducksHit}/10`, width / 2 - 80, height / 2);
-        ctx.fillText(`Score: ${score}`, width / 2 - 60, height / 2 + 30);
+        ctx.font = `${Math.min(canvas.width / 20, 30)}px Arial`;
+        ctx.fillText(`Round ${round - 1} Complete`, canvas.width / 2 - 150, canvas.height / 2 - 50);
+        ctx.font = `${Math.min(canvas.width / 30, 20)}px Arial`;
+        ctx.fillText(`Hits: ${ducksHit}/10`, canvas.width / 2 - 80, canvas.height / 2);
+        ctx.fillText(`Score: ${score}`, canvas.width / 2 - 60, canvas.height / 2 + 30);
         if (Date.now() - roundScoreTime > 3000) {
           checkRound();
         }
       } else if (gameState === 'gameOver') {
         ctx.fillStyle = '#000';
-        ctx.font = '40px Arial';
-        ctx.fillText('Game Over', width / 2 - 120, height / 2 - 100);
-        ctx.font = '20px Arial';
-        ctx.fillText(`Final Score: ${score}`, width / 2 - 100, height / 2 - 50);
-        ctx.fillText('High Scores:', width / 2 - 80, height / 2);
+        ctx.font = `${Math.min(canvas.width / 15, 40)}px Arial`;
+        ctx.fillText('Game Over', canvas.width / 2 - 120, canvas.height / 2 - 100);
+        ctx.font = `${Math.min(canvas.width / 30, 20)}px Arial`;
+        ctx.fillText(`Final Score: ${score}`, canvas.width / 2 - 100, canvas.height / 2 - 50);
+        ctx.fillText('High Scores:', canvas.width / 2 - 80, canvas.height / 2);
         highScores.forEach((hs, i) => {
-          ctx.fillText(`${i + 1}. ${hs}`, width / 2 - 60, height / 2 + 30 + i * 25);
+          ctx.fillText(`${i + 1}. ${hs}`, canvas.width / 2 - 60, canvas.height / 2 + 30 + i * 25);
         });
       }
       requestAnimationFrame(gameLoop);
     }
-    // Start button
+
     document.getElementById('startButton').addEventListener('click', () => {
       gameState = 'playing';
       score = 0;
       round = 1;
       startRound();
     });
-    // Shoot on click
+
     canvas.addEventListener('click', (e) => {
       const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+      const y = (e.clientY - rect.top) * (canvas.height / rect.height);
       shoot(x, y);
     });
-    // Start game loop
+
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
+      const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
+      shoot(x, y);
+    });
+
     gameLoop();
   </script>
 </body>
