@@ -262,32 +262,32 @@
       text-align: center;
       margin: 0.8rem auto;
     }
-    /* Game Section */
-    #game, #pong {
+    /* Game Sections */
+    #game, #pong, #asteroids {
       text-align: center;
       padding: 2rem 0;
       background-color: #f9fafb;
     }
-    #gameCanvas, #pongCanvas {
+    #gameCanvas, #pongCanvas, #asteroidsCanvas {
       width: 100%;
       max-width: 640px;
       height: auto;
       aspect-ratio: 4 / 3;
       border: 2px solid #003366;
-      background-color: #87CEEB;
+      background-color: #000;
       cursor: crosshair;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       border-radius: 8px;
       display: block;
       margin: 0 auto;
     }
-    #game-container, #pong-container {
+    #game-container, #pong-container, #asteroids-container {
       position: relative;
       display: inline-block;
       width: 100%;
       max-width: 640px;
     }
-    #startButton, #pongStartButton {
+    #startButton, #pongStartButton, #asteroidsStartButton {
       position: absolute;
       top: 50%;
       left: 50%;
@@ -302,10 +302,10 @@
       transition: background-color 0.3s ease;
       z-index: 10;
     }
-    #startButton:hover, #pongStartButton:hover {
+    #startButton:hover, #pongStartButton:hover, #asteroidsStartButton:hover {
       background-color: #006699;
     }
-    #game p, #pong p {
+    #game p, #pong p, #asteroids p {
       margin-top: 1rem;
       font-size: clamp(0.9rem, 2.5vw, 1rem);
       color: #004080;
@@ -420,6 +420,14 @@
       </div>
       <p>Use W/S keys to move the left paddle!</p>
     </section>
+    <section id="asteroids">
+      <h2>Asteroids</h2>
+      <div id="asteroids-container">
+        <canvas id="asteroidsCanvas"></canvas>
+        <button id="asteroidsStartButton">Start Game</button>
+      </div>
+      <p>Use Arrow Keys to move, Space to shoot!</p>
+    </section>
     <section id="research">
       <h2>Capstone Research</h2>
       <h3>Capstone - Political Science Thesis</h3>
@@ -475,7 +483,6 @@
     window.addEventListener('resize', updateCanvasSize);
     const width = canvas.width;
     const height = canvas.height;
-    // Load images
     const duckImg = new Image();
     duckImg.src = 'duck.png';
     const duck2Img = new Image();
@@ -486,7 +493,6 @@
     treeImg.src = 'ducktree.png';
     const startImg = new Image();
     startImg.src = 'duckstart.jpg';
-    // Game variables
     let score = 0;
     let highScores = JSON.parse(localStorage.getItem('duckHuntHighScores') || '[]');
     let round = 1;
@@ -706,13 +712,13 @@
     window.addEventListener('resize', updatePongCanvasSize);
     const pongWidth = pongCanvas.width;
     const pongHeight = pongCanvas.height;
-    // Pong variables
+    const pongStartImg = new Image();
+    pongStartImg.src = 'pong.jpg';
     let pongGameState = 'start';
     let playerPaddle = { x: 10, y: pongHeight / 2 - 50, width: 10, height: 100, speed: 5, score: 0 };
     let aiPaddle = { x: pongWidth - 20, y: pongHeight / 2 - 50, width: 10, height: 100, speed: 4, score: 0 };
     let ball = { x: pongWidth / 2, y: pongHeight / 2, radius: 10, speedX: 5, speedY: 3 };
     let keys = { w: false, s: false };
-    // Paddle movement
     document.addEventListener('keydown', (e) => {
       if (e.key === 'w' || e.key === 'W') keys.w = true;
       if (e.key === 's' || e.key === 'S') keys.s = true;
@@ -724,7 +730,6 @@
     function movePaddles() {
       if (keys.w && playerPaddle.y > 0) playerPaddle.y -= playerPaddle.speed;
       if (keys.s && playerPaddle.y < pongHeight - playerPaddle.height) playerPaddle.y += playerPaddle.speed;
-      // AI paddle tracks ball with slight delay for challenge
       let targetY = ball.y - aiPaddle.height / 2;
       if (aiPaddle.y < targetY) aiPaddle.y += Math.min(aiPaddle.speed, targetY - aiPaddle.y);
       if (aiPaddle.y > targetY) aiPaddle.y -= Math.min(aiPaddle.speed, aiPaddle.y - targetY);
@@ -734,20 +739,17 @@
     function moveBall() {
       ball.x += ball.speedX;
       ball.y += ball.speedY;
-      // Wall collision
       if (ball.y - ball.radius < 0 || ball.y + ball.radius > pongHeight) {
         ball.speedY = -ball.speedY;
       }
-      // Paddle collision
       if (
         (ball.x - ball.radius <= playerPaddle.x + playerPaddle.width &&
          ball.y >= playerPaddle.y && ball.y <= playerPaddle.y + playerPaddle.height) ||
         (ball.x + ball.radius >= aiPaddle.x &&
          ball.y >= aiPaddle.y && ball.y <= aiPaddle.y + aiPaddle.height)
       ) {
-        ball.speedX = -ball.speedX * 1.05; // Slight speed increase
+        ball.speedX = -ball.speedX * 1.05;
       }
-      // Score
       if (ball.x < 0) {
         aiPaddle.score++;
         resetBall();
@@ -765,7 +767,6 @@
     function drawPong() {
       pongCtx.fillStyle = '#000';
       pongCtx.fillRect(0, 0, pongWidth, pongHeight);
-      // Draw net
       pongCtx.strokeStyle = '#fff';
       pongCtx.setLineDash([5, 15]);
       pongCtx.beginPath();
@@ -773,15 +774,12 @@
       pongCtx.lineTo(pongWidth / 2, pongHeight);
       pongCtx.stroke();
       pongCtx.setLineDash([]);
-      // Draw paddles
       pongCtx.fillStyle = '#fff';
       pongCtx.fillRect(playerPaddle.x, playerPaddle.y, playerPaddle.width, playerPaddle.height);
       pongCtx.fillRect(aiPaddle.x, aiPaddle.y, aiPaddle.width, aiPaddle.height);
-      // Draw ball
       pongCtx.beginPath();
       pongCtx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
       pongCtx.fill();
-      // Draw scores
       pongCtx.fillStyle = '#fff';
       pongCtx.font = `${Math.min(pongWidth / 20, 30)}px 'Inter', sans-serif`;
       pongCtx.fillText(playerPaddle.score, pongWidth / 4, 50);
@@ -793,8 +791,7 @@
         moveBall();
         drawPong();
       } else {
-        pongCtx.fillStyle = '#000';
-        pongCtx.fillRect(0, 0, pongWidth, pongHeight);
+        pongCtx.drawImage(pongStartImg, 0, 0, pongWidth, pongHeight);
         pongCtx.fillStyle = '#fff';
         pongCtx.font = `${Math.min(pongWidth / 15, 40)}px 'Inter', sans-serif`;
         pongCtx.fillText('Pong', pongWidth / 2 - 60, pongHeight / 2 - 50);
@@ -811,6 +808,268 @@
       resetBall();
     });
     pongGameLoop();
+
+    // Asteroids Game Logic
+    const asteroidsCanvas = document.getElementById('asteroidsCanvas');
+    const asteroidsCtx = asteroidsCanvas.getContext('2d');
+    const updateAsteroidsCanvasSize = () => {
+      const maxWidth = Math.min(window.innerWidth * 0.9, 640);
+      asteroidsCanvas.width = maxWidth;
+      asteroidsCanvas.height = maxWidth * 3 / 4;
+    };
+    updateAsteroidsCanvasSize();
+    window.addEventListener('resize', updateAsteroidsCanvasSize);
+    const asteroidsWidth = asteroidsCanvas.width;
+    const asteroidsHeight = asteroidsCanvas.height;
+    const asteroidsStartImg = new Image();
+    asteroidsStartImg.src = 'asteroids.png';
+    let asteroidsGameState = 'start';
+    let asteroidsScore = 0;
+    let lives = 3;
+    let ship = {
+      x: asteroidsWidth / 2,
+      y: asteroidsHeight / 2,
+      radius: 15,
+      angle: 0,
+      speedX: 0,
+      speedY: 0,
+      thrust: 0.1,
+      rotation: 0,
+      thrusting: false
+    };
+    let asteroids = [];
+    let bullets = [];
+    let asteroidKeys = {
+      left: false,
+      right: false,
+      up: false,
+      space: false
+    };
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') asteroidKeys.left = true;
+      if (e.key === 'ArrowRight') asteroidKeys.right = true;
+      if (e.key === 'ArrowUp') asteroidKeys.up = true;
+      if (e.key === ' ') asteroidKeys.space = true;
+    });
+    document.addEventListener('keyup', (e) => {
+      if (e.key === 'ArrowLeft') asteroidKeys.left = false;
+      if (e.key === 'ArrowRight') asteroidKeys.right = false;
+      if (e.key === 'ArrowUp') asteroidKeys.up = false;
+      if (e.key === ' ') asteroidKeys.space = false;
+    });
+    class Asteroid {
+      constructor(x, y, radius, speedX, speedY, size) {
+        this.x = x;
+        this.y = y;
+        this.radius = radius;
+        this.speedX = speedX;
+        this.speedY = speedY;
+        this.size = size;
+      }
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        if (this.x < -this.radius) this.x = asteroidsWidth + this.radius;
+        if (this.x > asteroidsWidth + this.radius) this.x = -this.radius;
+        if (this.y < -this.radius) this.y = asteroidsHeight + this.radius;
+        if (this.y > asteroidsHeight + this.radius) this.y = -this.radius;
+      }
+      draw() {
+        asteroidsCtx.beginPath();
+        asteroidsCtx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        asteroidsCtx.strokeStyle = '#fff';
+        asteroidsCtx.stroke();
+      }
+    }
+    class Bullet {
+      constructor(x, y, angle) {
+        this.x = x;
+        this.y = y;
+        this.speedX = Math.cos(angle) * 7;
+        this.speedY = Math.sin(angle) * 7;
+        this.life = 60;
+      }
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.life--;
+        if (this.x < 0) this.x = asteroidsWidth;
+        if (this.x > asteroidsWidth) this.x = 0;
+        if (this.y < 0) this.y = asteroidsHeight;
+        if (this.y > asteroidsHeight) this.y = 0;
+      }
+      draw() {
+        asteroidsCtx.beginPath();
+        asteroidsCtx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+        asteroidsCtx.fillStyle = '#fff';
+        asteroidsCtx.fill();
+      }
+    }
+    function spawnAsteroids(count) {
+      asteroids = [];
+      for (let i = 0; i < count; i++) {
+        let x, y;
+        do {
+          x = Math.random() * asteroidsWidth;
+          y = Math.random() * asteroidsHeight;
+        } while (Math.hypot(x - ship.x, y - ship.y) < 100);
+        asteroids.push(new Asteroid(
+          x,
+          y,
+          30,
+          (Math.random() - 0.5) * 2,
+          (Math.random() - 0.5) * 2,
+          'large'
+        ));
+      }
+    }
+    function moveShip() {
+      if (asteroidKeys.left) ship.angle -= 0.1;
+      if (asteroidKeys.right) ship.angle += 0.1;
+      if (asteroidKeys.up) {
+        ship.thrusting = true;
+        ship.speedX += Math.cos(ship.angle) * ship.thrust;
+        ship.speedY += Math.sin(ship.angle) * ship.thrust;
+      } else {
+        ship.thrusting = false;
+      }
+      ship.x += ship.speedX;
+      ship.y += ship.speedY;
+      ship.speedX *= 0.99;
+      ship.speedY *= 0.99;
+      if (ship.x < -ship.radius) ship.x = asteroidsWidth + ship.radius;
+      if (ship.x > asteroidsWidth + ship.radius) ship.x = -ship.radius;
+      if (ship.y < -ship.radius) ship.y = asteroidsHeight + ship.radius;
+      if (ship.y > asteroidsHeight + ship.radius) ship.y = -ship.radius;
+    }
+    function shootBullet() {
+      if (asteroidKeys.space) {
+        bullets.push(new Bullet(
+          ship.x + Math.cos(ship.angle) * ship.radius,
+          ship.y + Math.sin(ship.angle) * ship.radius,
+          ship.angle
+        ));
+        asteroidKeys.space = false;
+      }
+    }
+    function checkCollisions() {
+      asteroids.forEach((asteroid, i) => {
+        bullets.forEach((bullet, j) => {
+          if (Math.hypot(bullet.x - asteroid.x, bullet.y - asteroid.y) < asteroid.radius) {
+            bullets.splice(j, 1);
+            if (asteroid.size === 'large') {
+              asteroids.push(
+                new Asteroid(asteroid.x, asteroid.y, 20, asteroid.speedX + (Math.random() - 0.5) * 2, asteroid.speedY + (Math.random() - 0.5) * 2, 'medium'),
+                new Asteroid(asteroid.x, asteroid.y, 20, asteroid.speedX + (Math.random() - 0.5) * 2, asteroid.speedY + (Math.random() - 0.5) * 2, 'medium')
+              );
+              asteroidsScore += 20;
+            } else if (asteroid.size === 'medium') {
+              asteroids.push(
+                new Asteroid(asteroid.x, asteroid.y, 10, asteroid.speedX + (Math.random() - 0.5) * 3, asteroid.speedY + (Math.random() - 0.5) * 3, 'small'),
+                new Asteroid(asteroid.x, asteroid.y, 10, asteroid.speedX + (Math.random() - 0.5) * 3, asteroid.speedY + (Math.random() - 0.5) * 3, 'small')
+              );
+              asteroidsScore += 50;
+            } else {
+              asteroidsScore += 100;
+            }
+            asteroids.splice(i, 1);
+          }
+        });
+        if (Math.hypot(asteroid.x - ship.x, asteroid.y - ship.y) < asteroid.radius + ship.radius) {
+          lives--;
+          asteroids.splice(i, 1);
+          ship.x = asteroidsWidth / 2;
+          ship.y = asteroidsHeight / 2;
+          ship.speedX = 0;
+          ship.speedY = 0;
+          if (lives <= 0) {
+            asteroidsGameState = 'gameOver';
+          }
+        }
+      });
+    }
+    function drawShip() {
+      asteroidsCtx.save();
+      asteroidsCtx.translate(ship.x, ship.y);
+      asteroidsCtx.rotate(ship.angle);
+      asteroidsCtx.beginPath();
+      asteroidsCtx.moveTo(ship.radius, 0);
+      asteroidsCtx.lineTo(-ship.radius * 0.5, ship.radius * 0.7);
+      asteroidsCtx.lineTo(-ship.radius * 0.5, -ship.radius * 0.7);
+      asteroidsCtx.closePath();
+      asteroidsCtx.strokeStyle = '#fff';
+      asteroidsCtx.stroke();
+      if (ship.thrusting) {
+        asteroidsCtx.beginPath();
+        asteroidsCtx.moveTo(-ship.radius * 0.5, 0);
+        asteroidsCtx.lineTo(-ship.radius, Math.random() * ship.radius * 0.3);
+        asteroidsCtx.strokeStyle = '#f00';
+        asteroidsCtx.stroke();
+      }
+      asteroidsCtx.restore();
+    }
+    function drawAsteroids() {
+      asteroids.forEach(asteroid => asteroid.draw());
+      bullets.forEach(bullet => bullet.draw());
+    }
+    function updateAsteroids() {
+      asteroids.forEach(asteroid => asteroid.update());
+      bullets.forEach(bullet => bullet.update());
+      bullets = bullets.filter(bullet => bullet.life > 0);
+    }
+    function asteroidsGameLoop() {
+      asteroidsCtx.fillStyle = '#000';
+      asteroidsCtx.fillRect(0, 0, asteroidsWidth, asteroidsHeight);
+      if (asteroidsGameState === 'playing') {
+        moveShip();
+        shootBullet();
+        updateAsteroids();
+        checkCollisions();
+        drawShip();
+        drawAsteroids();
+        asteroidsCtx.fillStyle = '#fff';
+        asteroidsCtx.font = `${Math.min(asteroidsWidth / 30, 20)}px 'Inter', sans-serif`;
+        asteroidsCtx.fillText(`Score: ${asteroidsScore}`, 10, 30);
+        asteroidsCtx.fillText(`Lives: ${lives}`, 10, 60);
+        if (asteroids.length === 0) {
+          spawnAsteroids(4 + Math.floor(asteroidsScore / 1000));
+        }
+      } else if (asteroidsGameState === 'gameOver') {
+        asteroidsCtx.fillStyle = '#fff';
+        asteroidsCtx.font = `${Math.min(asteroidsWidth / 15, 40)}px 'Inter', sans-serif`;
+        asteroidsCtx.fillText('Game Over', asteroidsWidth / 2 - 120, asteroidsHeight / 2 - 50);
+        asteroidsCtx.font = `${Math.min(asteroidsWidth / 30, 20)}px 'Inter', sans-serif`;
+        asteroidsCtx.fillText(`Final Score: ${asteroidsScore}`, asteroidsWidth / 2 - 100, asteroidsHeight / 2);
+      } else {
+        asteroidsCtx.drawImage(asteroidsStartImg, 0, 0, asteroidsWidth, asteroidsHeight);
+        asteroidsCtx.fillStyle = '#fff';
+        asteroidsCtx.font = `${Math.min(asteroidsWidth / 15, 40)}px 'Inter', sans-serif`;
+        asteroidsCtx.fillText('Asteroids', asteroidsWidth / 2 - 80, asteroidsHeight / 2 - 50);
+        asteroidsCtx.font = `${Math.min(asteroidsWidth / 30, 20)}px 'Inter', sans-serif`;
+        asteroidsCtx.fillText('Press Start to Play', asteroidsWidth / 2 - 100, asteroidsHeight / 2);
+      }
+      requestAnimationFrame(asteroidsGameLoop);
+    }
+    document.getElementById('asteroidsStartButton').addEventListener('click', () => {
+      asteroidsGameState = 'playing';
+      document.getElementById('asteroidsStartButton').style.display = 'none';
+      asteroidsScore = 0;
+      lives = 3;
+      ship = {
+        x: asteroidsWidth / 2,
+        y: asteroidsHeight / 2,
+        radius: 15,
+        angle: 0,
+        speedX: 0,
+        speedY: 0,
+        thrust: 0.1,
+        rotation: 0,
+        thrusting: false
+      };
+      bullets = [];
+      spawnAsteroids(4);
+    });
+    asteroidsGameLoop();
   </script>
 </body>
 </html>
