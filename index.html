@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -474,11 +473,26 @@
       const maxWidth = Math.min(window.innerWidth * 0.9, 640);
       canvas.width = maxWidth;
       canvas.height = maxWidth * 3 / 4;
+      width = canvas.width;
+      height = canvas.height;
+      dog.x = width / 2 - 25;
+      dog.y = height - 100;
     };
     updateCanvasSize();
     window.addEventListener('resize', updateCanvasSize);
-    const width = canvas.width;
-    const height = canvas.height;
+    let width = canvas.width;
+    let height = canvas.height;
+    // Load images
+    const duckImg = new Image();
+    duckImg.src = 'duck.png';
+    const duck2Img = new Image();
+    duck2Img.src = 'duck2.png';
+    const dogImg = new Image();
+    dogImg.src = 'duckdog.png';
+    const treeImg = new Image();
+    treeImg.src = 'ducktree.png';
+    const startImg = new Image();
+    startImg.src = 'duckstart.jpg';
     // Game variables
     let score = 0;
     let highScores = JSON.parse(localStorage.getItem('duckHuntHighScores') || '[]');
@@ -491,6 +505,7 @@
     let gameState = 'start';
     let minHits = 6;
     let roundScoreTime = 0;
+    const ducksPerRound = 10;
     class Duck {
       constructor() {
         this.x = Math.random() < 0.5 ? -50 : width + 50;
@@ -502,6 +517,7 @@
         this.hit = false;
         this.falling = false;
         this.fallSpeed = 0;
+        this.img = Math.random() < 0.5 ? duckImg : duck2Img;
         this.color = Math.random() < 0.5 ? '#8B4513' : '#556B2F';
       }
       update() {
@@ -525,54 +541,71 @@
         }
       }
       draw() {
-        let dir = this.vx > 0 ? 1 : -1;
-        ctx.save();
-        ctx.translate(this.x + this.size / 2, this.y + this.size / 4);
-        ctx.scale(dir, 1);
-        ctx.fillStyle = this.color;
-        // body
-        ctx.beginPath();
-        ctx.ellipse(0, 0, this.size / 2, this.size / 4, 0, 0, Math.PI * 2);
-        ctx.fill();
-        // head
-        ctx.beginPath();
-        ctx.arc(this.size / 4, 0, this.size / 8, 0, Math.PI * 2);
-        ctx.fill();
-        // beak
-        ctx.fillStyle = '#FFA500';
-        ctx.beginPath();
-        ctx.moveTo(this.size / 4 + this.size / 8, 0);
-        ctx.lineTo(this.size / 4 + this.size / 8 + this.size / 8, -this.size / 16);
-        ctx.lineTo(this.size / 4 + this.size / 8 + this.size / 8, this.size / 16);
-        ctx.fill();
-        ctx.restore();
+        if (this.img.complete) {
+          let dir = this.vx > 0 ? 1 : -1;
+          ctx.save();
+          ctx.translate(this.x + this.size / 2, this.y + this.size / 4);
+          ctx.scale(dir, 1);
+          ctx.drawImage(this.img, -this.size / 2, 0, this.size, this.size / 2);
+          ctx.restore();
+        } else {
+          let dir = this.vx > 0 ? 1 : -1;
+          ctx.save();
+          ctx.translate(this.x + this.size / 2, this.y + this.size / 4);
+          ctx.scale(dir, 1);
+          ctx.fillStyle = this.color;
+          // body
+          ctx.beginPath();
+          ctx.ellipse(0, 0, this.size / 2, this.size / 4, 0, 0, Math.PI * 2);
+          ctx.fill();
+          // head
+          ctx.beginPath();
+          ctx.arc(this.size / 4, 0, this.size / 8, 0, Math.PI * 2);
+          ctx.fill();
+          // beak
+          ctx.fillStyle = '#FFA500';
+          ctx.beginPath();
+          ctx.moveTo(this.size / 4 + this.size / 8, 0);
+          ctx.lineTo(this.size / 4 + this.size / 8 + this.size / 8, -this.size / 16);
+          ctx.lineTo(this.size / 4 + this.size / 8 + this.size / 8, this.size / 16);
+          ctx.fill();
+          ctx.restore();
+        }
       }
     }
     function drawDog() {
-      ctx.save();
-      ctx.translate(dog.x + 25, dog.y + 25);
-      ctx.fillStyle = '#A52A2A';
-      // head
-      ctx.beginPath();
-      ctx.arc(0, -10, 10, 0, Math.PI * 2);
-      ctx.fill();
-      // body
-      ctx.fillRect(-10, 0, 20, 20);
-      // legs
-      ctx.strokeStyle = '#A52A2A';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(-10, 20);
-      ctx.lineTo(-10, 30);
-      ctx.moveTo(10, 20);
-      ctx.lineTo(10, 30);
-      ctx.stroke();
-      ctx.restore();
-      if (dog.state === 'hold' && dog.holdingDuck) {
-        ctx.fillStyle = '#8B4513';
+      if (dogImg.complete) {
+        ctx.drawImage(dogImg, dog.x, dog.y, 50, 50);
+      } else {
+        ctx.save();
+        ctx.translate(dog.x + 25, dog.y + 25);
+        ctx.fillStyle = '#A52A2A';
+        // head
         ctx.beginPath();
-        ctx.ellipse(dog.x + 45, dog.y + 15, 10, 5, 0, 0, Math.PI * 2);
+        ctx.arc(0, -10, 10, 0, Math.PI * 2);
         ctx.fill();
+        // body
+        ctx.fillRect(-10, 0, 20, 20);
+        // legs
+        ctx.strokeStyle = '#A52A2A';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-10, 20);
+        ctx.lineTo(-10, 30);
+        ctx.moveTo(10, 20);
+        ctx.lineTo(10, 30);
+        ctx.stroke();
+        ctx.restore();
+      }
+      if (dog.state === 'hold' && dog.holdingDuck) {
+        if (duckImg.complete) {
+          ctx.drawImage(duckImg, dog.x + 45, dog.y + 15, 20, 10);
+        } else {
+          ctx.fillStyle = '#8B4513';
+          ctx.beginPath();
+          ctx.ellipse(dog.x + 45, dog.y + 15, 10, 5, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
         dog.frame++;
         if (dog.frame > 60) {
           dog.state = 'idle';
@@ -582,6 +615,10 @@
           dog.x = width / 2 - 25;
         }
       } else if (dog.state === 'laugh') {
+        // Add laugh text
+        ctx.fillStyle = '#000';
+        ctx.font = '20px Arial';
+        ctx.fillText('HAHA', dog.x + 50, dog.y - 10);
         dog.frame++;
         if (dog.frame > 60) {
           dog.state = 'idle';
@@ -590,20 +627,24 @@
       }
     }
     function drawTree() {
-      let tx = 100,
-        ty = height - 200,
-        tw = 100,
-        th = 150;
-      // trunk
-      ctx.fillStyle = '#8B4513';
-      ctx.fillRect(tx + tw / 2 - 10, ty + th / 2, 20, height - (ty + th / 2));
-      // leaves
-      ctx.fillStyle = '#228B22';
-      ctx.beginPath();
-      ctx.moveTo(tx + tw / 2, ty);
-      ctx.lineTo(tx, ty + th);
-      ctx.lineTo(tx + tw, ty + th);
-      ctx.fill();
+      if (treeImg.complete) {
+        ctx.drawImage(treeImg, 100, height - 200, 100, 150);
+      } else {
+        let tx = 100,
+          ty = height - 200,
+          tw = 100,
+          th = 150;
+        // trunk
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(tx + tw / 2 - 10, ty + th / 2, 20, height - (ty + th / 2));
+        // leaves
+        ctx.fillStyle = '#228B22';
+        ctx.beginPath();
+        ctx.moveTo(tx + tw / 2, ty);
+        ctx.lineTo(tx, ty + th);
+        ctx.lineTo(tx + tw, ty + th);
+        ctx.fill();
+      }
     }
     function startRound() {
       ducksHit = 0;
@@ -614,18 +655,18 @@
       document.getElementById('startButton').style.display = 'none';
     }
     function spawnDuckSet() {
-      if (ducksTotal >= 10) {
+      if (ducksTotal >= ducksPerRound) {
         gameState = 'roundEnd';
         roundScoreTime = Date.now();
         return;
       }
-      ducks = [];
-      let numDucks = 1;
+      ducks.push(...ducks.filter(d => !d.alive && !d.falling)); // keep falling ducks if any, but normally not
+      let numDucks = 2;
       for (let i = 0; i < numDucks; i++) {
         ducks.push(new Duck());
       }
       bullets = 3;
-      ducksTotal++;
+      ducksTotal += numDucks;
     }
     function checkRound() {
       if (ducksHit >= minHits) {
@@ -687,12 +728,16 @@
       ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
       drawTree();
       if (gameState === 'start') {
-        ctx.fillStyle = '#000';
-        ctx.font = `${Math.min(canvas.width / 15, 40)}px Arial`;
-        ctx.textAlign = 'center';
-        ctx.fillText('Duck Hunt', canvas.width / 2, canvas.height / 2 - 50);
-        ctx.font = `${Math.min(canvas.width / 30, 20)}px Arial`;
-        ctx.fillText('Press Start to Play', canvas.width / 2, canvas.height / 2);
+        if (startImg.complete) {
+          ctx.drawImage(startImg, 0, 0, canvas.width, canvas.height);
+        } else {
+          ctx.fillStyle = '#000';
+          ctx.font = `${Math.min(canvas.width / 15, 40)}px Arial`;
+          ctx.textAlign = 'center';
+          ctx.fillText('Duck Hunt', canvas.width / 2, canvas.height / 2 - 50);
+          ctx.font = `${Math.min(canvas.width / 30, 20)}px Arial`;
+          ctx.fillText('Press Start to Play', canvas.width / 2, canvas.height / 2);
+        }
       } else if (gameState === 'playing') {
         ducks.forEach(duck => {
           duck.update();
@@ -705,22 +750,15 @@
         ctx.textAlign = 'left';
         ctx.fillText(`Score: ${score}`, 10, 30);
         ctx.fillText(`Round: ${round}`, 10, 60);
-        ctx.fillText(`Hits: ${ducksHit}/10`, 10, 90);
+        ctx.fillText(`Hits: ${ducksHit}/${ducksPerRound}`, 10, 90);
         ctx.fillText(`Bullets: ${bullets}`, 10, 120);
-        ctx.strokeStyle = '#FF0000';
-        ctx.beginPath();
-        ctx.moveTo(canvas.width / 2 - 10, canvas.height / 2);
-        ctx.lineTo(canvas.width / 2 + 10, canvas.height / 2);
-        ctx.moveTo(canvas.width / 2, canvas.height / 2 - 10);
-        ctx.lineTo(canvas.width / 2, canvas.height / 2 + 10);
-        ctx.stroke();
       } else if (gameState === 'roundEnd') {
         ctx.fillStyle = '#000';
         ctx.font = `${Math.min(canvas.width / 20, 30)}px Arial`;
         ctx.textAlign = 'center';
         ctx.fillText(`Round ${round - 1} Complete`, canvas.width / 2, canvas.height / 2 - 50);
         ctx.font = `${Math.min(canvas.width / 30, 20)}px Arial`;
-        ctx.fillText(`Hits: ${ducksHit}/10`, canvas.width / 2, canvas.height / 2);
+        ctx.fillText(`Hits: ${ducksHit}/${ducksPerRound}`, canvas.width / 2, canvas.height / 2);
         ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2 + 30);
         if (Date.now() - roundScoreTime > 3000) {
           checkRound();
@@ -767,11 +805,21 @@
       const maxWidth = Math.min(window.innerWidth * 0.9, 640);
       pongCanvas.width = maxWidth;
       pongCanvas.height = maxWidth * 3 / 4;
+      pongWidth = pongCanvas.width;
+      pongHeight = pongCanvas.height;
+      playerPaddle.x = 10;
+      aiPaddle.x = pongWidth - 20;
+      playerPaddle.y = pongHeight / 2 - 50;
+      aiPaddle.y = pongHeight / 2 - 50;
+      ball.x = pongWidth / 2;
+      ball.y = pongHeight / 2;
     };
     updatePongCanvasSize();
     window.addEventListener('resize', updatePongCanvasSize);
-    const pongWidth = pongCanvas.width;
-    const pongHeight = pongCanvas.height;
+    let pongWidth = pongCanvas.width;
+    let pongHeight = pongCanvas.height;
+    const pongStartImg = new Image();
+    pongStartImg.src = 'pong.jpg';
     let pongGameState = 'start';
     let playerPaddle = { x: 10, y: pongHeight / 2 - 50, width: 10, height: 100, speed: 5, score: 0 };
     let aiPaddle = { x: pongWidth - 20, y: pongHeight / 2 - 50, width: 10, height: 100, speed: 4, score: 0 };
@@ -848,14 +896,18 @@
         pongCtx.fillText(playerPaddle.score, pongWidth / 4, 50);
         pongCtx.fillText(aiPaddle.score, 3 * pongWidth / 4, 50);
       } else {
-        pongCtx.fillStyle = '#000';
-        pongCtx.fillRect(0, 0, pongWidth, pongHeight);
-        pongCtx.fillStyle = '#fff';
-        pongCtx.font = `${Math.min(pongWidth / 15, 40)}px 'Inter', sans-serif`;
-        pongCtx.textAlign = 'center';
-        pongCtx.fillText('Pong', pongWidth / 2, pongHeight / 2 - 50);
-        pongCtx.font = `${Math.min(pongWidth / 30, 20)}px 'Inter', sans-serif`;
-        pongCtx.fillText('Press Start to Play', pongWidth / 2, pongHeight / 2);
+        if (pongStartImg.complete) {
+          pongCtx.drawImage(pongStartImg, 0, 0, pongWidth, pongHeight);
+        } else {
+          pongCtx.fillStyle = '#000';
+          pongCtx.fillRect(0, 0, pongWidth, pongHeight);
+          pongCtx.fillStyle = '#fff';
+          pongCtx.font = `${Math.min(pongWidth / 15, 40)}px 'Inter', sans-serif`;
+          pongCtx.textAlign = 'center';
+          pongCtx.fillText('Pong', pongWidth / 2, pongHeight / 2 - 50);
+          pongCtx.font = `${Math.min(pongWidth / 30, 20)}px 'Inter', sans-serif`;
+          pongCtx.fillText('Press Start to Play', pongWidth / 2, pongHeight / 2);
+        }
       }
       requestAnimationFrame(pongGameLoop);
     }
@@ -874,11 +926,17 @@
       const maxWidth = Math.min(window.innerWidth * 0.9, 640);
       asteroidsCanvas.width = maxWidth;
       asteroidsCanvas.height = maxWidth * 3 / 4;
+      asteroidsWidth = asteroidsCanvas.width;
+      asteroidsHeight = asteroidsCanvas.height;
+      ship.x = asteroidsWidth / 2;
+      ship.y = asteroidsHeight / 2;
     };
     updateAsteroidsCanvasSize();
     window.addEventListener('resize', updateAsteroidsCanvasSize);
-    const asteroidsWidth = asteroidsCanvas.width;
-    const asteroidsHeight = asteroidsCanvas.height;
+    let asteroidsWidth = asteroidsCanvas.width;
+    let asteroidsHeight = asteroidsCanvas.height;
+    const asteroidsStartImg = new Image();
+    asteroidsStartImg.src = 'asteroids.png';
     let asteroidsGameState = 'start';
     let asteroidsScore = 0;
     let lives = 3;
@@ -994,8 +1052,10 @@
       }
     }
     function checkCollisions() {
-      asteroids.forEach((asteroid, i) => {
-        bullets.forEach((bullet, j) => {
+      for (let i = asteroids.length - 1; i >= 0; i--) {
+        const asteroid = asteroids[i];
+        for (let j = bullets.length - 1; j >= 0; j--) {
+          const bullet = bullets[j];
           if (Math.hypot(bullet.x - asteroid.x, bullet.y - asteroid.y) < asteroid.radius) {
             bullets.splice(j, 1);
             if (asteroid.size === 'large') {
@@ -1014,8 +1074,9 @@
               asteroidsScore += 100;
             }
             asteroids.splice(i, 1);
+            break;
           }
-        });
+        }
         if (Math.hypot(asteroid.x - ship.x, asteroid.y - ship.y) < asteroid.radius + ship.radius) {
           lives--;
           asteroids.splice(i, 1);
@@ -1027,7 +1088,7 @@
             asteroidsGameState = 'gameOver';
           }
         }
-      });
+      }
     }
     function asteroidsGameLoop() {
       asteroidsCtx.clearRect(0, 0, asteroidsWidth, asteroidsHeight);
@@ -1059,36 +1120,20 @@
         asteroidsCtx.font = `${Math.min(asteroidsWidth / 30, 20)}px Arial`;
         asteroidsCtx.fillText(`Final Score: ${asteroidsScore}`, asteroidsWidth / 2, asteroidsHeight / 2 - 50);
       } else {
-        asteroidsCtx.fillStyle = '#000';
-        asteroidsCtx.fillRect(0, 0, asteroidsWidth, asteroidsHeight);
-        asteroidsCtx.fillStyle = '#fff';
-        asteroidsCtx.font = `${Math.min(asteroidsWidth / 15, 40)}px 'Inter', sans-serif`;
-        asteroidsCtx.textAlign = 'center';
-        asteroidsCtx.fillText('Asteroids', asteroidsWidth / 2, asteroidsHeight / 2 - 50);
-        asteroidsCtx.font = `${Math.min(asteroidsWidth / 30, 20)}px 'Inter', sans-serif`;
-        asteroidsCtx.fillText('Press Start to Play', asteroidsWidth / 2, asteroidsHeight / 2);
+        if (asteroidsStartImg.complete) {
+          asteroidsCtx.drawImage(asteroidsStartImg, 0, 0, asteroidsWidth, asteroidsHeight);
+        } else {
+          asteroidsCtx.fillStyle = '#000';
+          asteroidsCtx.fillRect(0, 0, asteroidsWidth, asteroidsHeight);
+          asteroidsCtx.fillStyle = '#fff';
+          asteroidsCtx.font = `${Math.min(asteroidsWidth / 15, 40)}px 'Inter', sans-serif`;
+          asteroidsCtx.textAlign = 'center';
+          asteroidsCtx.fillText('Asteroids', asteroidsWidth / 2, asteroidsHeight / 2 - 50);
+          asteroidsCtx.font = `${Math.min(asteroidsWidth / 30, 20)}px 'Inter', sans-serif`;
+          asteroidsCtx.fillText('Press Start to Play', asteroidsWidth / 2, asteroidsHeight / 2);
+        }
       }
       requestAnimationFrame(asteroidsGameLoop);
-    }
-    function drawShip() {
-      asteroidsCtx.save();
-      asteroidsCtx.translate(ship.x, ship.y);
-      asteroidsCtx.rotate(ship.angle);
-      asteroidsCtx.beginPath();
-      asteroidsCtx.moveTo(ship.radius, 0);
-      asteroidsCtx.lineTo(-ship.radius * 0.5, ship.radius * 0.7);
-      asteroidsCtx.lineTo(-ship.radius * 0.5, -ship.radius * 0.7);
-      asteroidsCtx.closePath();
-      asteroidsCtx.strokeStyle = '#fff';
-      asteroidsCtx.stroke();
-      if (ship.thrusting) {
-        asteroidsCtx.beginPath();
-        asteroidsCtx.moveTo(-ship.radius * 0.5, 0);
-        asteroidsCtx.lineTo(-ship.radius, Math.random() * ship.radius * 0.3);
-        asteroidsCtx.strokeStyle = '#f00';
-        asteroidsCtx.stroke();
-      }
-      asteroidsCtx.restore();
     }
     document.getElementById('asteroidsStartButton').addEventListener('click', () => {
       asteroidsGameState = 'playing';
@@ -1103,4 +1148,3 @@
   </script>
 </body>
 </html>
-```
