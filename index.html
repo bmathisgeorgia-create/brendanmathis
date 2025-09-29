@@ -524,8 +524,7 @@
         if (this.alive) {
           this.x += this.vx;
           this.y += this.vy;
-          if (this.y > height - 100) this.vy = -this.vy;
-          if (this.y < -this.size) this.alive = false;
+          if (this.y < 50 || this.y > height - 100) this.vy = -this.vy;
           if (this.x < -50 || this.x > width + 50) this.alive = false;
         } else if (this.falling) {
           this.y += this.fallSpeed;
@@ -660,13 +659,9 @@
         roundScoreTime = Date.now();
         return;
       }
-      ducks.push(...ducks.filter(d => !d.alive && !d.falling)); // keep falling ducks if any, but normally not
-      let numDucks = 2;
-      for (let i = 0; i < numDucks; i++) {
-        ducks.push(new Duck());
-      }
+      ducks = [new Duck()];
       bullets = 3;
-      ducksTotal += numDucks;
+      ducksTotal++;
     }
     function checkRound() {
       if (ducksHit >= minHits) {
