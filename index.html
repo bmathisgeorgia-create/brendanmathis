@@ -272,6 +272,7 @@
       aspect-ratio: 4 / 3;
       border: 2px solid #003366;
       background-color: #000;
+      cursor: crosshair;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       border-radius: 8px;
       display: block;
@@ -460,16 +461,12 @@
   <script src="https://elfsightcdn.com/platform.js" async></script>
   <script>
     // Hamburger menu toggle
-    console.log('Initializing hamburger menu');
     const navToggle = document.querySelector('.nav-toggle');
     const navMenu = document.querySelector('.nav-menu');
     navToggle.addEventListener('click', () => {
-      console.log('Nav toggle clicked');
       navMenu.classList.toggle('active');
     });
-
-    // Duck Hunt Game Logic
-    console.log('Initializing Duck Hunt');
+    // Game logic
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const updateCanvasSize = () => {
@@ -478,160 +475,233 @@
       canvas.height = maxWidth * 3 / 4;
     };
     updateCanvasSize();
-    window.addEventListener('resize', () => {
-      console.log('Resizing Duck Hunt canvas');
-      updateCanvasSize();
-    });
+    window.addEventListener('resize', updateCanvasSize);
     const width = canvas.width;
     const height = canvas.height;
-    let duckHuntState = 'start';
-    let duckHuntScore = 0;
-    let duckHuntBullets = 3;
-    let duckHuntHits = 0;
-    let duckHuntTotal = 0;
+    // Load images
+    const duckImg = new Image();
+    duckImg.src = 'duck.png';
+    const duck2Img = new Image();
+    duck2Img.src = 'duck2.png';
+    const dogImg = new Image();
+    dogImg.src = 'duckdog.png';
+    const treeImg = new Image();
+    treeImg.src = 'ducktree.png';
+    const startImg = new Image();
+    startImg.src = 'duckstart.jpg';
+    // Game variables
+    let score = 0;
+    let highScores = JSON.parse(localStorage.getItem('duckHuntHighScores') || '[]');
+    let round = 1;
+    let ducksHit = 0;
+    let ducksTotal = 0;
+    let bullets = 3;
     let ducks = [];
+    let dog = { state: 'idle', x: width / 2 - 25, y: height - 100, frame: 0, holdingDuck: false };
+    let gameState = 'start';
+    let minHits = 6;
+    let roundScoreTime = 0;
     class Duck {
       constructor() {
-        this.x = Math.random() < 0.5 ? -30 : width + 30;
-        this.y = Math.random() * (height - 100) + 50;
+        this.x = Math.random() < 0.5 ? -50 : width + 50;
+        this.y = Math.random() * (height / 2) + 50;
         this.vx = (this.x < 0 ? 1 : -1) * (Math.random() * 2 + 2);
         this.vy = Math.random() * 2 - 1;
-        this.size = Math.min(width / 16, 30);
+        this.size = Math.min(width / 16, 40);
         this.alive = true;
+        this.hit = false;
+        this.falling = false;
+        this.fallSpeed = 0;
+        this.img = Math.random() < 0.5 ? duckImg : duck2Img;
       }
       update() {
         if (this.alive) {
           this.x += this.vx;
           this.y += this.vy;
-          if (this.y < 50 || this.y > height - 50) this.vy = -this.vy;
-          if (this.x < -30 || this.x > width + 30) this.alive = false;
+          if (this.y < 50 || this.y > height - 100) this.vy = -this.vy;
+          if (this.x < -50 || this.x > width + 50) this.alive = false;
+        } else if (this.falling) {
+          this.y += this.fallSpeed;
+          this.fallSpeed += 0.5;
+          if (this.y > height - 100) {
+            this.falling = false;
+            dog.state = 'hold';
+            dog.holdingDuck = true;
+            dog.frame = 0;
+            dog.y = height - 100;
+            dog.x = this.x - 25;
+          }
         }
       }
       draw() {
-        ctx.fillStyle = '#FFD700';
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.drawImage(this.img, this.x, this.y, this.size, this.size / 2);
       }
     }
-    function spawnDuck() {
-      if (duckHuntTotal < 10) {
-        ducks.push(new Duck());
-        duckHuntTotal++;
-        console.log(`Spawned duck, total: ${duckHuntTotal}`);
+    function drawDog() {
+      ctx.drawImage(dogImg, dog.x, dog.y, 50, 50);
+      if (dog.state === 'hold' && dog.holdingDuck) {
+        ctx.drawImage(duckImg, dog.x + 45, dog.y + 15, 20, 10);
+        dog.frame++;
+        if (dog.frame > 60) {
+          dog.state = 'idle';
+          dog.holdingDuck = false;
+          dog.frame = 0;
+          dog.y = height - 100;
+          dog.x = width / 2 - 25;
+        }
+      } else if (dog.state === 'laugh') {
+        dog.frame++;
+        if (dog.frame > 60) {
+          dog.state = 'idle';
+          dog.frame = 0;
+        }
       }
     }
-    function shootDuck(x, y) {
-      if (duckHuntBullets > 0 && duckHuntState === 'playing') {
-        duckHuntBullets--;
-        console.log(`Shot fired, bullets left: ${duckHuntBullets}`);
-        ducks.forEach((duck, i) => {
-          if (duck.alive && Math.hypot(x - duck.x, y - duck.y) < duck.size) {
+    function drawTree() {
+      ctx.drawImage(treeImg, 100, height - 200, 100, 150);
+    }
+    function startRound() {
+      ducksHit = 0;
+      ducksTotal = 0;
+      minHits = Math.min(9, 5 + Math.floor(round / 2));
+      spawnDuckSet();
+      gameState = 'playing';
+      document.getElementById('startButton').style.display = 'none';
+    }
+    function spawnDuckSet() {
+      if (ducksTotal >= 10) {
+        gameState = 'roundEnd';
+        roundScoreTime = Date.now();
+        return;
+      }
+      ducks = [new Duck()];
+      bullets = 3;
+      ducksTotal++;
+    }
+    function checkRound() {
+      if (ducksHit >= minHits) {
+        score += 10000;
+        round++;
+        startRound();
+      } else {
+        gameState = 'gameOver';
+        updateHighScores();
+      }
+    }
+    function updateHighScores() {
+      highScores.push(score);
+      highScores.sort((a, b) => b - a);
+      highScores = highScores.slice(0, 5);
+      localStorage.setItem('duckHuntHighScores', JSON.stringify(highScores));
+    }
+    function shoot(x, y) {
+      if (bullets > 0 && gameState === 'playing') {
+        bullets--;
+        let hitAny = false;
+        ducks.forEach(duck => {
+          if (duck.alive &&
+              x > duck.x && x < duck.x + duck.size &&
+              y > duck.y && y < duck.y + duck.size / 2) {
             duck.alive = false;
-            duckHuntHits++;
-            duckHuntScore += 100;
-            ducks.splice(i, 1);
-            console.log(`Duck hit, score: ${duckHuntScore}, hits: ${duckHuntHits}`);
+            duck.hit = true;
+            duck.falling = true;
+            duck.vx = 0;
+            duck.vy = 0;
+            ducksHit++;
+            score += 500 + round * 100;
+            hitAny = true;
           }
         });
-        if (duckHuntBullets === 0 && ducks.length > 0) {
-          setTimeout(() => {
-            ducks = [];
-            duckHuntBullets = 3;
-            spawnDuck();
-          }, 1000);
-        } else if (ducks.length === 0) {
-          setTimeout(spawnDuck, 500);
+        if (hitAny) {
+          // Dog will hold later
         }
-        if (duckHuntTotal >= 10 && ducks.length === 0) {
-          duckHuntState = duckHuntHits >= 6 ? 'win' : 'gameOver';
-          console.log(`Game ended, state: ${duckHuntState}`);
+        if (bullets == 0 && ducks.some(d => d.alive)) {
+          dog.state = 'laugh';
+          dog.frame = 0;
+          setTimeout(spawnDuckSet, 2000);
+        } else if (!ducks.some(d => d.alive)) {
+          setTimeout(spawnDuckSet, 1000);
         }
       }
     }
-    function duckHuntLoop() {
-      ctx.fillStyle = '#87CEEB';
-      ctx.fillRect(0, 0, width, height);
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = '#228B22';
-      ctx.fillRect(0, height - 50, width, 50);
-      if (duckHuntState === 'start') {
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, width, height);
-        ctx.fillStyle = '#fff';
-        ctx.font = `${Math.min(width / 15, 40)}px 'Inter', sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.fillText('Duck Hunt', width / 2, height / 2 - 50);
-        ctx.font = `${Math.min(width / 30, 20)}px 'Inter', sans-serif`;
-        ctx.fillText('Press Start to Play', width / 2, height / 2);
-      } else if (duckHuntState === 'playing') {
+      ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
+      drawTree();
+      if (gameState === 'start') {
+        if (startImg.complete) {
+          ctx.drawImage(startImg, 0, 0, canvas.width, canvas.height);
+        } else {
+          ctx.fillStyle = '#000';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+      } else if (gameState === 'playing') {
         ducks.forEach(duck => {
           duck.update();
           duck.draw();
         });
-        ducks = ducks.filter(duck => duck.alive);
-        ctx.fillStyle = '#fff';
-        ctx.font = `${Math.min(width / 30, 20)}px 'Inter', sans-serif`;
-        ctx.textAlign = 'left';
-        ctx.fillText(`Score: ${duckHuntScore}`, 10, 30);
-        ctx.fillText(`Bullets: ${duckHuntBullets}`, 10, 60);
-        ctx.fillText(`Hits: ${duckHuntHits}/10`, 10, 90);
+        ducks = ducks.filter(d => d.alive || d.falling);
+        drawDog();
+        ctx.fillStyle = '#000';
+        ctx.font = `${Math.min(canvas.width / 30, 20)}px Arial`;
+        ctx.fillText(`Score: ${score}`, 10, 30);
+        ctx.fillText(`Round: ${round}`, 10, 60);
+        ctx.fillText(`Hits: ${ducksHit}/10`, 10, 90);
+        ctx.fillText(`Bullets: ${bullets}`, 10, 120);
         ctx.strokeStyle = '#FF0000';
         ctx.beginPath();
-        ctx.moveTo(width / 2 - 10, height / 2);
-        ctx.lineTo(width / 2 + 10, height / 2);
-        ctx.moveTo(width / 2, height / 2 - 10);
-        ctx.lineTo(width / 2, height / 2 + 10);
+        ctx.moveTo(canvas.width / 2 - 10, canvas.height / 2);
+        ctx.lineTo(canvas.width / 2 + 10, canvas.height / 2);
+        ctx.moveTo(canvas.width / 2, canvas.height / 2 - 10);
+        ctx.lineTo(canvas.width / 2, canvas.height / 2 + 10);
         ctx.stroke();
-      } else if (duckHuntState === 'win') {
+      } else if (gameState === 'roundEnd') {
         ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, width, height);
-        ctx.fillStyle = '#fff';
-        ctx.font = `${Math.min(width / 15, 40)}px 'Inter', sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.fillText('You Win!', width / 2, height / 2 - 50);
-        ctx.font = `${Math.min(width / 30, 20)}px 'Inter', sans-serif`;
-        ctx.fillText(`Score: ${duckHuntScore}`, width / 2, height / 2);
-      } else if (duckHuntState === 'gameOver') {
+        ctx.font = `${Math.min(canvas.width / 20, 30)}px Arial`;
+        ctx.fillText(`Round ${round - 1} Complete`, canvas.width / 2 - 150, canvas.height / 2 - 50);
+        ctx.font = `${Math.min(canvas.width / 30, 20)}px Arial`;
+        ctx.fillText(`Hits: ${ducksHit}/10`, canvas.width / 2 - 80, canvas.height / 2);
+        ctx.fillText(`Score: ${score}`, canvas.width / 2 - 60, canvas.height / 2 + 30);
+        if (Date.now() - roundScoreTime > 3000) {
+          checkRound();
+        }
+      } else if (gameState === 'gameOver') {
         ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, width, height);
-        ctx.fillStyle = '#fff';
-        ctx.font = `${Math.min(width / 15, 40)}px 'Inter', sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.fillText('Game Over', width / 2, height / 2 - 50);
-        ctx.font = `${Math.min(width / 30, 20)}px 'Inter', sans-serif`;
-        ctx.fillText(`Score: ${duckHuntScore}`, width / 2, height / 2);
+        ctx.font = `${Math.min(canvas.width / 15, 40)}px Arial`;
+        ctx.fillText('Game Over', canvas.width / 2 - 120, canvas.height / 2 - 100);
+        ctx.font = `${Math.min(canvas.width / 30, 20)}px Arial`;
+        ctx.fillText(`Final Score: ${score}`, canvas.width / 2 - 100, canvas.height / 2 - 50);
+        ctx.fillText('High Scores:', canvas.width / 2 - 80, canvas.height / 2);
+        highScores.forEach((hs, i) => {
+          ctx.fillText(`${i + 1}. ${hs}`, canvas.width / 2 - 60, canvas.height / 2 + 30 + i * 25);
+        });
       }
-      requestAnimationFrame(duckHuntLoop);
+      requestAnimationFrame(gameLoop);
     }
     document.getElementById('startButton').addEventListener('click', () => {
-      console.log('Duck Hunt start button clicked');
-      duckHuntState = 'playing';
-      document.getElementById('startButton').style.display = 'none';
-      duckHuntScore = 0;
-      duckHuntBullets = 3;
-      duckHuntHits = 0;
-      duckHuntTotal = 0;
-      ducks = [];
-      spawnDuck();
+      gameState = 'playing';
+      score = 0;
+      round = 1;
+      startRound();
     });
     canvas.addEventListener('click', (e) => {
       const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left) * (width / rect.width);
-      const y = (e.clientY - rect.top) * (height / rect.height);
-      shootDuck(x, y);
+      const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+      const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+      shoot(x, y);
     });
     canvas.addEventListener('touchstart', (e) => {
       e.preventDefault();
       const rect = canvas.getBoundingClientRect();
       const touch = e.touches[0];
-      const x = (touch.clientX - rect.left) * (width / rect.width);
-      const y = (touch.clientY - rect.top) * (height / rect.height);
-      shootDuck(x, y);
+      const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
+      const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
+      shoot(x, y);
     });
-    duckHuntLoop();
+    gameLoop();
 
     // Pong Game Logic
-    console.log('Initializing Pong');
     const pongCanvas = document.getElementById('pongCanvas');
     const pongCtx = pongCanvas.getContext('2d');
     const updatePongCanvasSize = () => {
@@ -640,89 +710,92 @@
       pongCanvas.height = maxWidth * 3 / 4;
     };
     updatePongCanvasSize();
-    window.addEventListener('resize', () => {
-      console.log('Resizing Pong canvas');
-      updatePongCanvasSize();
-    });
+    window.addEventListener('resize', updatePongCanvasSize);
     const pongWidth = pongCanvas.width;
     const pongHeight = pongCanvas.height;
-    let pongState = 'start';
-    let pongPlayer = { x: 10, y: pongHeight / 2 - 50, width: 10, height: 100, speed: 5, score: 0 };
-    let pongAI = { x: pongWidth - 20, y: pongHeight / 2 - 50, width: 10, height: 100, speed: 4, score: 0 };
-    let pongBall = { x: pongWidth / 2, y: pongHeight / 2, radius: 10, speedX: 5, speedY: 3 };
-    let pongKeys = { w: false, s: false };
-    function handlePongKeys(e, state) {
-      if (e.key === 'w' || e.key === 'W') pongKeys.w = state;
-      if (e.key === 's' || e.key === 'S') pongKeys.s = state;
+    const pongStartImg = new Image();
+    pongStartImg.src = 'pong.jpg';
+    let pongGameState = 'start';
+    let playerPaddle = { x: 10, y: pongHeight / 2 - 50, width: 10, height: 100, speed: 5, score: 0 };
+    let aiPaddle = { x: pongWidth - 20, y: pongHeight / 2 - 50, width: 10, height: 100, speed: 4, score: 0 };
+    let ball = { x: pongWidth / 2, y: pongHeight / 2, radius: 10, speedX: 5, speedY: 3 };
+    let keys = { w: false, s: false };
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'w' || e.key === 'W') keys.w = true;
+      if (e.key === 's' || e.key === 'S') keys.s = true;
+    });
+    document.addEventListener('keyup', (e) => {
+      if (e.key === 'w' || e.key === 'W') keys.w = false;
+      if (e.key === 's' || e.key === 'S') keys.s = false;
+    });
+    function movePaddles() {
+      if (keys.w && playerPaddle.y > 0) playerPaddle.y -= playerPaddle.speed;
+      if (keys.s && playerPaddle.y < pongHeight - playerPaddle.height) playerPaddle.y += playerPaddle.speed;
+      let targetY = ball.y - aiPaddle.height / 2;
+      if (aiPaddle.y < targetY) aiPaddle.y += Math.min(aiPaddle.speed, targetY - aiPaddle.y);
+      if (aiPaddle.y > targetY) aiPaddle.y -= Math.min(aiPaddle.speed, aiPaddle.y - targetY);
+      if (aiPaddle.y < 0) aiPaddle.y = 0;
+      if (aiPaddle.y > pongHeight - aiPaddle.height) aiPaddle.y = pongHeight - aiPaddle.height;
     }
-    document.addEventListener('keydown', (e) => handlePongKeys(e, true));
-    document.addEventListener('keyup', (e) => handlePongKeys(e, false));
-    function movePongPaddles() {
-      if (pongKeys.w && pongPlayer.y > 0) pongPlayer.y -= pongPlayer.speed;
-      if (pongKeys.s && pongPlayer.y < pongHeight - pongPlayer.height) pongPlayer.y += pongPlayer.speed;
-      let targetY = pongBall.y - pongAI.height / 2;
-      if (pongAI.y < targetY) pongAI.y += Math.min(pongAI.speed, targetY - pongAI.y);
-      if (pongAI.y > targetY) pongAI.y -= Math.min(pongAI.speed, pongAI.y - targetY);
-      if (pongAI.y < 0) pongAI.y = 0;
-      if (pongAI.y > pongHeight - pongAI.height) pongAI.y = pongHeight - pongAI.height;
-    }
-    function movePongBall() {
-      pongBall.x += pongBall.speedX;
-      pongBall.y += pongBall.speedY;
-      if (pongBall.y - pongBall.radius < 0 || pongBall.y + pongBall.radius > pongHeight) {
-        pongBall.speedY = -pongBall.speedY;
+    function moveBall() {
+      ball.x += ball.speedX;
+      ball.y += ball.speedY;
+      if (ball.y - ball.radius < 0 || ball.y + ball.radius > pongHeight) {
+        ball.speedY = -ball.speedY;
       }
       if (
-        (pongBall.x - pongBall.radius <= pongPlayer.x + pongPlayer.width &&
-         pongBall.y >= pongPlayer.y && pongBall.y <= pongPlayer.y + pongPlayer.height) ||
-        (pongBall.x + pongBall.radius >= pongAI.x &&
-         pongBall.y >= pongAI.y && pongBall.y <= pongAI.y + pongAI.height)
+        (ball.x - ball.radius <= playerPaddle.x + playerPaddle.width &&
+         ball.y >= playerPaddle.y && ball.y <= playerPaddle.y + playerPaddle.height) ||
+        (ball.x + ball.radius >= aiPaddle.x &&
+         ball.y >= aiPaddle.y && ball.y <= aiPaddle.y + aiPaddle.height)
       ) {
-        pongBall.speedX = -pongBall.speedX * 1.05;
+        ball.speedX = -ball.speedX * 1.05;
       }
-      if (pongBall.x < 0) {
-        pongAI.score++;
-        resetPongBall();
-      } else if (pongBall.x > pongWidth) {
-        pongPlayer.score++;
-        resetPongBall();
+      if (ball.x < 0) {
+        aiPaddle.score++;
+        resetBall();
+      } else if (ball.x > pongWidth) {
+        playerPaddle.score++;
+        resetBall();
       }
     }
-    function resetPongBall() {
-      pongBall.x = pongWidth / 2;
-      pongBall.y = pongHeight / 2;
-      pongBall.speedX = (Math.random() > 0.5 ? 5 : -5);
-      pongBall.speedY = (Math.random() - 0.5) * 6;
+    function resetBall() {
+      ball.x = pongWidth / 2;
+      ball.y = pongHeight / 2;
+      ball.speedX = (Math.random() > 0.5 ? 5 : -5) * 1;
+      ball.speedY = (Math.random() - 0.5) * 6;
     }
-    function drawPong() {
-      pongCtx.fillStyle = '#000';
-      pongCtx.fillRect(0, 0, pongWidth, pongHeight);
-      pongCtx.strokeStyle = '#fff';
-      pongCtx.setLineDash([5, 15]);
-      pongCtx.beginPath();
-      pongCtx.moveTo(pongWidth / 2, 0);
-      pongCtx.lineTo(pongWidth / 2, pongHeight);
-      pongCtx.stroke();
-      pongCtx.setLineDash([]);
-      pongCtx.fillStyle = '#fff';
-      pongCtx.fillRect(pongPlayer.x, pongPlayer.y, pongPlayer.width, pongPlayer.height);
-      pongCtx.fillRect(pongAI.x, pongAI.y, pongAI.width, pongAI.height);
-      pongCtx.beginPath();
-      pongCtx.arc(pongBall.x, pongBall.y, pongBall.radius, 0, Math.PI * 2);
-      pongCtx.fill();
-      pongCtx.font = `${Math.min(pongWidth / 20, 30)}px 'Inter', sans-serif`;
-      pongCtx.textAlign = 'center';
-      pongCtx.fillText(pongPlayer.score, pongWidth / 4, 50);
-      pongCtx.fillText(pongAI.score, 3 * pongWidth / 4, 50);
-    }
-    function pongLoop() {
-      if (pongState === 'playing') {
-        movePongPaddles();
-        movePongBall();
-        drawPong();
-      } else {
+    function pongGameLoop() {
+      pongCtx.clearRect(0, 0, pongWidth, pongHeight);
+      if (pongGameState === 'playing') {
+        movePaddles();
+        moveBall();
         pongCtx.fillStyle = '#000';
         pongCtx.fillRect(0, 0, pongWidth, pongHeight);
+        pongCtx.strokeStyle = '#fff';
+        pongCtx.setLineDash([5, 15]);
+        pongCtx.beginPath();
+        pongCtx.moveTo(pongWidth / 2, 0);
+        pongCtx.lineTo(pongWidth / 2, pongHeight);
+        pongCtx.stroke();
+        pongCtx.setLineDash([]);
+        pongCtx.fillStyle = '#fff';
+        pongCtx.fillRect(playerPaddle.x, playerPaddle.y, playerPaddle.width, playerPaddle.height);
+        pongCtx.fillRect(aiPaddle.x, aiPaddle.y, aiPaddle.width, aiPaddle.height);
+        pongCtx.beginPath();
+        pongCtx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+        pongCtx.fill();
+        pongCtx.fillStyle = '#fff';
+        pongCtx.font = `${Math.min(pongWidth / 20, 30)}px 'Inter', sans-serif`;
+        pongCtx.fillText(playerPaddle.score, pongWidth / 4, 50);
+        pongCtx.fillText(aiPaddle.score, 3 * pongWidth / 4, 50);
+      } else {
+        if (pongStartImg.complete) {
+          pongCtx.drawImage(pongStartImg, 0, 0, pongWidth, pongHeight);
+        } else {
+          pongCtx.fillStyle = '#000';
+          pongCtx.fillRect(0, 0, pongWidth, pongHeight);
+        }
         pongCtx.fillStyle = '#fff';
         pongCtx.font = `${Math.min(pongWidth / 15, 40)}px 'Inter', sans-serif`;
         pongCtx.textAlign = 'center';
@@ -730,20 +803,18 @@
         pongCtx.font = `${Math.min(pongWidth / 30, 20)}px 'Inter', sans-serif`;
         pongCtx.fillText('Press Start to Play', pongWidth / 2, pongHeight / 2);
       }
-      requestAnimationFrame(pongLoop);
+      requestAnimationFrame(pongGameLoop);
     }
     document.getElementById('pongStartButton').addEventListener('click', () => {
-      console.log('Pong start button clicked');
-      pongState = 'playing';
+      pongGameState = 'playing';
       document.getElementById('pongStartButton').style.display = 'none';
-      pongPlayer.score = 0;
-      pongAI.score = 0;
-      resetPongBall();
+      playerPaddle.score = 0;
+      aiPaddle.score = 0;
+      resetBall();
     });
-    pongLoop();
+    pongGameLoop();
 
     // Asteroids Game Logic
-    console.log('Initializing Asteroids');
     const asteroidsCanvas = document.getElementById('asteroidsCanvas');
     const asteroidsCtx = asteroidsCanvas.getContext('2d');
     const updateAsteroidsCanvasSize = () => {
@@ -752,41 +823,30 @@
       asteroidsCanvas.height = maxWidth * 3 / 4;
     };
     updateAsteroidsCanvasSize();
-    window.addEventListener('resize', () => {
-      console.log('Resizing Asteroids canvas');
-      updateAsteroidsCanvasSize();
-    });
+    window.addEventListener('resize', updateAsteroidsCanvasSize);
     const asteroidsWidth = asteroidsCanvas.width;
     const asteroidsHeight = asteroidsCanvas.height;
-    let asteroidsState = 'start';
+    const asteroidsStartImg = new Image();
+    asteroidsStartImg.src = 'asteroids.png';
+    let asteroidsGameState = 'start';
     let asteroidsScore = 0;
-    let asteroidsLives = 3;
-    let asteroidsShip = {
-      x: asteroidsWidth / 2,
-      y: asteroidsHeight / 2,
-      radius: 15,
-      angle: 0,
-      speedX: 0,
-      speedY: 0,
-      thrust: 0.1,
-      thrusting: false
-    };
-    let asteroidsList = [];
-    let asteroidsBullets = [];
-    let asteroidsKeys = {
-      left: false,
-      right: false,
-      up: false,
-      space: false
-    };
-    function handleAsteroidsKeys(e, state) {
-      if (e.key === 'ArrowLeft') asteroidsKeys.left = state;
-      if (e.key === 'ArrowRight') asteroidsKeys.right = state;
-      if (e.key === 'ArrowUp') asteroidsKeys.up = state;
-      if (e.key === ' ') asteroidsKeys.space = state;
-    }
-    document.addEventListener('keydown', (e) => handleAsteroidsKeys(e, true));
-    document.addEventListener('keyup', (e) => handleAsteroidsKeys(e, false));
+    let lives = 3;
+    let ship = { x: asteroidsWidth / 2, y: asteroidsHeight / 2, radius: 15, angle: 0, speedX: 0, speedY: 0, thrust: 0.1, thrusting: false };
+    let asteroids = [];
+    let bullets = [];
+    let asteroidKeys = { left: false, right: false, up: false, space: false };
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') asteroidKeys.left = true;
+      if (e.key === 'ArrowRight') asteroidKeys.right = true;
+      if (e.key === 'ArrowUp') asteroidKeys.up = true;
+      if (e.key === ' ') asteroidKeys.space = true;
+    });
+    document.addEventListener('keyup', (e) => {
+      if (e.key === 'ArrowLeft') asteroidKeys.left = false;
+      if (e.key === 'ArrowRight') asteroidKeys.right = false;
+      if (e.key === 'ArrowUp') asteroidKeys.up = false;
+      if (e.key === ' ') asteroidKeys.space = false;
+    });
     class Asteroid {
       constructor(x, y, radius, speedX, speedY, size) {
         this.x = x;
@@ -836,62 +896,65 @@
       }
     }
     function spawnAsteroids(count) {
-      asteroidsList = [];
+      asteroids = [];
       for (let i = 0; i < count; i++) {
         let x, y;
         do {
           x = Math.random() * asteroidsWidth;
           y = Math.random() * asteroidsHeight;
-        } while (Math.hypot(x - asteroidsShip.x, y - asteroidsShip.y) < 100);
-        asteroidsList.push(new Asteroid(
-          x, y, 30, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, 'large'
+        } while (Math.hypot(x - ship.x, y - ship.y) < 100);
+        asteroids.push(new Asteroid(
+          x,
+          y,
+          30,
+          (Math.random() - 0.5) * 2,
+          (Math.random() - 0.5) * 2,
+          'large'
         ));
       }
-      console.log(`Spawned ${count} asteroids`);
     }
-    function moveAsteroidsShip() {
-      if (asteroidsKeys.left) asteroidsShip.angle -= 0.1;
-      if (asteroidsKeys.right) asteroidsShip.angle += 0.1;
-      if (asteroidsKeys.up) {
-        asteroidsShip.thrusting = true;
-        asteroidsShip.speedX += Math.cos(asteroidsShip.angle) * asteroidsShip.thrust;
-        asteroidsShip.speedY += Math.sin(asteroidsShip.angle) * asteroidsShip.thrust;
+    function moveShip() {
+      if (asteroidKeys.left) ship.angle -= 0.1;
+      if (asteroidKeys.right) ship.angle += 0.1;
+      if (asteroidKeys.up) {
+        ship.thrusting = true;
+        ship.speedX += Math.cos(ship.angle) * ship.thrust;
+        ship.speedY += Math.sin(ship.angle) * ship.thrust;
       } else {
-        asteroidsShip.thrusting = false;
+        ship.thrusting = false;
       }
-      asteroidsShip.x += asteroidsShip.speedX;
-      asteroidsShip.y += asteroidsShip.speedY;
-      asteroidsShip.speedX *= 0.99;
-      asteroidsShip.speedY *= 0.99;
-      if (asteroidsShip.x < -asteroidsShip.radius) asteroidsShip.x = asteroidsWidth + asteroidsShip.radius;
-      if (asteroidsShip.x > asteroidsWidth + asteroidsShip.radius) asteroidsShip.x = -asteroidsShip.radius;
-      if (asteroidsShip.y < -asteroidsShip.radius) asteroidsShip.y = asteroidsHeight + asteroidsShip.radius;
-      if (asteroidsShip.y > asteroidsHeight + asteroidsShip.radius) asteroidsShip.y = -asteroidsShip.radius;
+      ship.x += ship.speedX;
+      ship.y += ship.speedY;
+      ship.speedX *= 0.99;
+      ship.speedY *= 0.99;
+      if (ship.x < -ship.radius) ship.x = asteroidsWidth + ship.radius;
+      if (ship.x > asteroidsWidth + ship.radius) ship.x = -ship.radius;
+      if (ship.y < -ship.radius) ship.y = asteroidsHeight + ship.radius;
+      if (ship.y > asteroidsHeight + ship.radius) ship.y = -ship.radius;
     }
-    function shootAsteroidsBullet() {
-      if (asteroidsKeys.space && asteroidsBullets.length < 5) {
-        asteroidsBullets.push(new Bullet(
-          asteroidsShip.x + Math.cos(asteroidsShip.angle) * asteroidsShip.radius,
-          asteroidsShip.y + Math.sin(asteroidsShip.angle) * asteroidsShip.radius,
-          asteroidsShip.angle
+    function shootBullet() {
+      if (asteroidKeys.space) {
+        bullets.push(new Bullet(
+          ship.x + Math.cos(ship.angle) * ship.radius,
+          ship.y + Math.sin(ship.angle) * ship.radius,
+          ship.angle
         ));
-        asteroidsKeys.space = false;
-        console.log('Bullet fired');
+        asteroidKeys.space = false;
       }
     }
-    function checkAsteroidsCollisions() {
-      asteroidsList.forEach((asteroid, i) => {
-        asteroidsBullets.forEach((bullet, j) => {
+    function checkCollisions() {
+      asteroids.forEach((asteroid, i) => {
+        bullets.forEach((bullet, j) => {
           if (Math.hypot(bullet.x - asteroid.x, bullet.y - asteroid.y) < asteroid.radius) {
-            asteroidsBullets.splice(j, 1);
+            bullets.splice(j, 1);
             if (asteroid.size === 'large') {
-              asteroidsList.push(
+              asteroids.push(
                 new Asteroid(asteroid.x, asteroid.y, 20, asteroid.speedX + (Math.random() - 0.5) * 2, asteroid.speedY + (Math.random() - 0.5) * 2, 'medium'),
                 new Asteroid(asteroid.x, asteroid.y, 20, asteroid.speedX + (Math.random() - 0.5) * 2, asteroid.speedY + (Math.random() - 0.5) * 2, 'medium')
               );
               asteroidsScore += 20;
             } else if (asteroid.size === 'medium') {
-              asteroidsList.push(
+              asteroids.push(
                 new Asteroid(asteroid.x, asteroid.y, 10, asteroid.speedX + (Math.random() - 0.5) * 3, asteroid.speedY + (Math.random() - 0.5) * 3, 'small'),
                 new Asteroid(asteroid.x, asteroid.y, 10, asteroid.speedX + (Math.random() - 0.5) * 3, asteroid.speedY + (Math.random() - 0.5) * 3, 'small')
               );
@@ -899,83 +962,51 @@
             } else {
               asteroidsScore += 100;
             }
-            asteroidsList.splice(i, 1);
-            console.log(`Asteroid hit, score: ${asteroidsScore}`);
+            asteroids.splice(i, 1);
           }
         });
-        if (Math.hypot(asteroid.x - asteroidsShip.x, asteroid.y - asteroidsShip.y) < asteroid.radius + asteroidsShip.radius) {
-          asteroidsLives--;
-          asteroidsList.splice(i, 1);
-          asteroidsShip.x = asteroidsWidth / 2;
-          asteroidsShip.y = asteroidsHeight / 2;
-          asteroidsShip.speedX = 0;
-          asteroidsShip.speedY = 0;
-          if (asteroidsLives <= 0) {
-            asteroidsState = 'gameOver';
-            console.log('Game over, no lives left');
-          } else {
-            console.log(`Ship hit, lives left: ${asteroidsLives}`);
+        if (Math.hypot(asteroid.x - ship.x, asteroid.y - ship.y) < asteroid.radius + ship.radius) {
+          lives--;
+          asteroids.splice(i, 1);
+          ship.x = asteroidsWidth / 2;
+          ship.y = asteroidsHeight / 2;
+          ship.speedX = 0;
+          ship.speedY = 0;
+          if (lives <= 0) {
+            asteroidsGameState = 'gameOver';
           }
         }
       });
     }
-    function drawAsteroidsShip() {
-      asteroidsCtx.save();
-      asteroidsCtx.translate(asteroidsShip.x, asteroidsShip.y);
-      asteroidsCtx.rotate(asteroidsShip.angle);
-      asteroidsCtx.beginPath();
-      asteroidsCtx.moveTo(asteroidsShip.radius, 0);
-      asteroidsCtx.lineTo(-asteroidsShip.radius * 0.5, asteroidsShip.radius * 0.7);
-      asteroidsCtx.lineTo(-asteroidsShip.radius * 0.5, -asteroidsShip.radius * 0.7);
-      asteroidsCtx.closePath();
-      asteroidsCtx.strokeStyle = '#fff';
-      asteroidsCtx.stroke();
-      if (asteroidsShip.thrusting) {
-        asteroidsCtx.beginPath();
-        asteroidsCtx.moveTo(-asteroidsShip.radius * 0.5, 0);
-        asteroidsCtx.lineTo(-asteroidsShip.radius, Math.random() * asteroidsShip.radius * 0.3);
-        asteroidsCtx.strokeStyle = '#f00';
-        asteroidsCtx.stroke();
-      }
-      asteroidsCtx.restore();
-    }
-    function drawAsteroids() {
-      asteroidsList.forEach(asteroid => asteroid.draw());
-      asteroidsBullets.forEach(bullet => bullet.draw());
-    }
-    function updateAsteroids() {
-      asteroidsList.forEach(asteroid => asteroid.update());
-      asteroidsBullets.forEach(bullet => bullet.update());
-      asteroidsBullets = asteroidsBullets.filter(bullet => bullet.life > 0);
-    }
-    function asteroidsLoop() {
-      asteroidsCtx.fillStyle = '#000';
-      asteroidsCtx.fillRect(0, 0, asteroidsWidth, asteroidsHeight);
-      if (asteroidsState === 'playing') {
-        moveAsteroidsShip();
-        shootAsteroidsBullet();
+    function asteroidsGameLoop() {
+      asteroidsCtx.clearRect(0, 0, asteroidsWidth, asteroidsHeight);
+      if (asteroidsGameState === 'playing') {
+        moveShip();
+        shootBullet();
         updateAsteroids();
-        checkAsteroidsCollisions();
-        drawAsteroidsShip();
+        checkCollisions();
+        drawShip();
         drawAsteroids();
-        asteroidsCtx.fillStyle = '#fff';
-        asteroidsCtx.font = `${Math.min(asteroidsWidth / 30, 20)}px 'Inter', sans-serif`;
-        asteroidsCtx.textAlign = 'left';
+        asteroidsCtx.fillStyle = '#000';
+        asteroidsCtx.font = `${Math.min(asteroidsWidth / 30, 20)}px Arial`;
         asteroidsCtx.fillText(`Score: ${asteroidsScore}`, 10, 30);
-        asteroidsCtx.fillText(`Lives: ${asteroidsLives}`, 10, 60);
-        if (asteroidsList.length === 0) {
+        asteroidsCtx.fillText(`Lives: ${lives}`, 10, 60);
+        if (asteroids.length === 0) {
           spawnAsteroids(4 + Math.floor(asteroidsScore / 1000));
         }
-      } else if (asteroidsState === 'gameOver') {
-        asteroidsCtx.fillStyle = '#fff';
-        asteroidsCtx.font = `${Math.min(asteroidsWidth / 15, 40)}px 'Inter', sans-serif`;
-        asteroidsCtx.textAlign = 'center';
-        asteroidsCtx.fillText('Game Over', asteroidsWidth / 2, asteroidsHeight / 2 - 50);
-        asteroidsCtx.font = `${Math.min(asteroidsWidth / 30, 20)}px 'Inter', sans-serif`;
-        asteroidsCtx.fillText(`Final Score: ${asteroidsScore}`, asteroidsWidth / 2, asteroidsHeight / 2);
-      } else {
+      } else if (asteroidsGameState === 'gameOver') {
         asteroidsCtx.fillStyle = '#000';
-        asteroidsCtx.fillRect(0, 0, asteroidsWidth, asteroidsHeight);
+        asteroidsCtx.font = `${Math.min(asteroidsWidth / 15, 40)}px Arial`;
+        asteroidsCtx.fillText('Game Over', asteroidsWidth / 2 - 120, asteroidsHeight / 2 - 100);
+        asteroidsCtx.font = `${Math.min(asteroidsWidth / 30, 20)}px Arial`;
+        asteroidsCtx.fillText(`Final Score: ${asteroidsScore}`, asteroidsWidth / 2 - 100, asteroidsHeight / 2 - 50);
+      } else {
+        if (asteroidsStartImg.complete) {
+          asteroidsCtx.drawImage(asteroidsStartImg, 0, 0, asteroidsWidth, asteroidsHeight);
+        } else {
+          asteroidsCtx.fillStyle = '#000';
+          asteroidsCtx.fillRect(0, 0, asteroidsWidth, asteroidsHeight);
+        }
         asteroidsCtx.fillStyle = '#fff';
         asteroidsCtx.font = `${Math.min(asteroidsWidth / 15, 40)}px 'Inter', sans-serif`;
         asteroidsCtx.textAlign = 'center';
@@ -983,28 +1014,47 @@
         asteroidsCtx.font = `${Math.min(asteroidsWidth / 30, 20)}px 'Inter', sans-serif`;
         asteroidsCtx.fillText('Press Start to Play', asteroidsWidth / 2, asteroidsHeight / 2);
       }
-      requestAnimationFrame(asteroidsLoop);
+      requestAnimationFrame(asteroidsGameLoop);
+    }
+    function updateAsteroids() {
+      asteroids.forEach(asteroid => asteroid.update());
+      bullets.forEach(bullet => bullet.update());
+      bullets = bullets.filter(bullet => bullet.life > 0);
+    }
+    function drawAsteroids() {
+      asteroids.forEach(asteroid => asteroid.draw());
+      bullets.forEach(bullet => bullet.draw());
+    }
+    function drawShip() {
+      asteroidsCtx.save();
+      asteroidsCtx.translate(ship.x, ship.y);
+      asteroidsCtx.rotate(ship.angle);
+      asteroidsCtx.beginPath();
+      asteroidsCtx.moveTo(ship.radius, 0);
+      asteroidsCtx.lineTo(-ship.radius * 0.5, ship.radius * 0.7);
+      asteroidsCtx.lineTo(-ship.radius * 0.5, -ship.radius * 0.7);
+      asteroidsCtx.closePath();
+      asteroidsCtx.strokeStyle = '#fff';
+      asteroidsCtx.stroke();
+      if (ship.thrusting) {
+        asteroidsCtx.beginPath();
+        asteroidsCtx.moveTo(-ship.radius * 0.5, 0);
+        asteroidsCtx.lineTo(-ship.radius, Math.random() * ship.radius * 0.3);
+        asteroidsCtx.strokeStyle = '#f00';
+        asteroidsCtx.stroke();
+      }
+      asteroidsCtx.restore();
     }
     document.getElementById('asteroidsStartButton').addEventListener('click', () => {
-      console.log('Asteroids start button clicked');
-      asteroidsState = 'playing';
+      asteroidsGameState = 'playing';
       document.getElementById('asteroidsStartButton').style.display = 'none';
       asteroidsScore = 0;
-      asteroidsLives = 3;
-      asteroidsShip = {
-        x: asteroidsWidth / 2,
-        y: asteroidsHeight / 2,
-        radius: 15,
-        angle: 0,
-        speedX: 0,
-        speedY: 0,
-        thrust: 0.1,
-        thrusting: false
-      };
-      asteroidsBullets = [];
+      lives = 3;
+      ship = { x: asteroidsWidth / 2, y: asteroidsHeight / 2, radius: 15, angle: 0, speedX: 0, speedY: 0, thrust: 0.1, thrusting: false };
+      bullets = [];
       spawnAsteroids(4);
     });
-    asteroidsLoop();
+    asteroidsGameLoop();
   </script>
 </body>
 </html>
