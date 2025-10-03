@@ -3,17 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Game Arcade Collection</title>
+    <title>Ultimate Arcade Collection</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; background: #000; color: #fff; }
-        #gameSelect { margin: 20px; padding: 10px; font-size: 16px; }
-        #gameContainer { margin: 20px auto; border: 2px solid #fff; }
-        canvas { display: none; background: #000; }
-        #instructions { margin: 10px; font-size: 14px; }
+        body {
+            font-family: 'Press Start 2P', cursive;
+            text-align: center;
+            background: linear-gradient(to bottom, #0a0a2a, #1a1a4a);
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #ffcc00;
+            text-shadow: 0 0 10px #ffcc00, 0 0 20px #ff9900;
+            margin-bottom: 20px;
+        }
+        #gameSelect, #restart {
+            background: #222;
+            color: #fff;
+            border: 1px solid #fff;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 16px;
+            margin: 10px;
+            cursor: pointer;
+        }
+        #gameSelect:hover, #restart:hover {
+            background: #333;
+        }
+        #instructions {
+            margin: 10px;
+            font-size: 14px;
+            max-width: 800px;
+            margin: 0 auto 20px;
+        }
+        #gameContainer {
+            margin: 20px auto;
+            border: 2px solid #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 800px;
+            height: 600px;
+        }
+        canvas {
+            display: none;
+            background: #000;
+        }
     </style>
 </head>
 <body>
-    <h1>Simple 2D Arcade Games Collection</h1>
+    <h1>Ultimate Arcade Collection</h1>
     <label for="gameSelect">Choose a Game:</label>
     <select id="gameSelect">
         <option value="pong">1. Pong</option>
@@ -24,7 +68,8 @@
         <option value="2048">6. 2048</option>
         <option value="tictactoe">7. Tic-Tac-Toe</option>
     </select>
-    <div id="instructions">Use arrow keys for player 1 / WASD for player 2 where applicable. Space to shoot in Asteroids. Mouse for Duck Hunt. Arrow keys for 2048 and Pac-Man.</div>
+    <button id="restart">Restart Game</button>
+    <div id="instructions">Use arrow keys for player 1 / WASD for player 2 where applicable. Space to shoot in Asteroids. Mouse for Duck Hunt and Tic-Tac-Toe. Arrow keys for 2048 and Pac-Man.</div>
     <div id="gameContainer">
         <canvas id="pongCanvas" width="800" height="600"></canvas>
         <canvas id="asteroidsCanvas" width="800" height="600"></canvas>
@@ -37,6 +82,7 @@
 
     <script>
         const gameSelect = document.getElementById('gameSelect');
+        const restartBtn = document.getElementById('restart');
         const canvases = {
             pong: document.getElementById('pongCanvas'),
             asteroids: document.getElementById('asteroidsCanvas'),
@@ -50,18 +96,29 @@
         let currentGame = null;
         let gameLoop = null;
 
-        gameSelect.addEventListener('change', (e) => {
+        gameSelect.addEventListener('change', switchGame);
+
+        restartBtn.addEventListener('click', () => {
+            if (currentGame) {
+                cancelAnimationFrame(gameLoop);
+                currentGame.stop();
+                currentGame.init(canvases[gameSelect.value]);
+                currentGame.start();
+            }
+        });
+
+        function switchGame(e) {
             if (currentGame) {
                 cancelAnimationFrame(gameLoop);
                 currentGame.stop();
             }
-            const gameName = e.target.value;
+            const gameName = e ? e.target.value : 'pong';
             Object.values(canvases).forEach(c => c.style.display = 'none');
             canvases[gameName].style.display = 'block';
             currentGame = games[gameName];
             currentGame.init(canvases[gameName]);
             currentGame.start();
-        });
+        }
 
         const games = {
             pong: {
@@ -74,38 +131,41 @@
                 init: function(canvas) {
                     this.canvas = canvas;
                     this.ctx = canvas.getContext('2d');
+                    this.reset();
                     document.addEventListener('keydown', (e) => this.keys[e.key] = true);
                     document.addEventListener('keyup', (e) => this.keys[e.key] = false);
                 },
+                reset: function() {
+                    this.ball = { x: 400, y: 300, vx: 5, vy: 3, r: 10 };
+                    this.paddle1 = { x: 20, y: 250, w: 10, h: 100, vy: 0 };
+                    this.paddle2 = { x: 770, y: 250, w: 10, h: 100, vy: 0 };
+                    this.score1 = 0;
+                    this.score2 = 0;
+                },
                 update: function() {
-                    // Paddle movement - fixed key bindings
                     if (this.keys['ArrowUp']) this.paddle1.y = Math.max(0, this.paddle1.y - 7);
                     if (this.keys['ArrowDown']) this.paddle1.y = Math.min(500, this.paddle1.y + 7);
                     if (this.keys['w']) this.paddle2.y = Math.max(0, this.paddle2.y - 7);
                     if (this.keys['s']) this.paddle2.y = Math.min(500, this.paddle2.y + 7);
 
-                    // Ball movement
                     this.ball.x += this.ball.vx;
                     this.ball.y += this.ball.vy;
 
-                    // Wall bounce
                     if (this.ball.y < this.ball.r || this.ball.y > 590 - this.ball.r) this.ball.vy *= -1;
 
-                    // Paddle collision
                     if (this.ball.x - this.ball.r < this.paddle1.x + this.paddle1.w &&
                         this.ball.x + this.ball.r > this.paddle1.x &&
-                        this.ball.y > this.paddle1.y &&
-                        this.ball.y < this.paddle1.y + this.paddle1.h) {
-                        this.ball.vx *= -1;
+                        this.ball.y - this.ball.r < this.paddle1.y + this.paddle1.h &&
+                        this.ball.y + this.ball.r > this.paddle1.y) {
+                        this.ball.vx *= -1.1;
                     }
                     if (this.ball.x + this.ball.r > this.paddle2.x &&
                         this.ball.x - this.ball.r < this.paddle2.x + this.paddle2.w &&
-                        this.ball.y > this.paddle2.y &&
-                        this.ball.y < this.paddle2.y + this.paddle2.h) {
-                        this.ball.vx *= -1;
+                        this.ball.y - this.ball.r < this.paddle2.y + this.paddle2.h &&
+                        this.ball.y + this.ball.r > this.paddle2.y) {
+                        this.ball.vx *= -1.1;
                     }
 
-                    // Score
                     if (this.ball.x < 0) { this.score2++; this.resetBall(); }
                     if (this.ball.x > 800) { this.score1++; this.resetBall(); }
                 },
@@ -115,7 +175,8 @@
                     this.ctx.fillRect(this.paddle1.x, this.paddle1.y, this.paddle1.w, this.paddle1.h);
                     this.ctx.fillRect(this.paddle2.x, this.paddle2.y, this.paddle2.w, this.paddle2.h);
                     this.ctx.beginPath(); this.ctx.arc(this.ball.x, this.ball.y, this.ball.r, 0, Math.PI * 2); this.ctx.fill();
-                    this.ctx.fillText(`Score: ${this.score1} - ${this.score2}`, 350, 50);
+                    this.ctx.font = '20px Arial';
+                    this.ctx.fillText(`Player 1: ${this.score1} - Player 2: ${this.score2}`, 250, 50);
                 },
                 resetBall: function() {
                     this.ball.x = 400;
@@ -129,16 +190,20 @@
                     const loop = () => { this.update(); this.draw(); gameLoop = requestAnimationFrame(loop); };
                     loop();
                 },
-                stop: function() {}
+                stop: function() {
+                    this.reset();
+                }
             },
             asteroids: {
                 canvas: null, ctx: null,
                 ship: { x: 400, y: 300, angle: 0, vx: 0, vy: 0, thrusting: false },
                 bullets: [], asteroidNum: 5, asteroids: [],
+                score: 0,
                 keys: {},
                 init: function(canvas) {
                     this.canvas = canvas;
                     this.ctx = canvas.getContext('2d');
+                    this.score = 0;
                     document.addEventListener('keydown', (e) => { this.keys[e.key] = true; if (e.key === ' ') { e.preventDefault(); this.shoot(); } });
                     document.addEventListener('keyup', (e) => this.keys[e.key] = false);
                     this.generateAsteroids();
@@ -146,15 +211,18 @@
                 generateAsteroids: function() {
                     this.asteroids = [];
                     for (let i = 0; i < this.asteroidNum; i++) {
-                        this.asteroids.push({ x: Math.random() * 800, y: Math.random() * 600, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2, r: 20 + Math.random() * 30 });
+                        let x = Math.random() * 800, y = Math.random() * 600;
+                        while (Math.abs(x - this.ship.x) < 100 && Math.abs(y - this.ship.y) < 100) {
+                            x = Math.random() * 800; y = Math.random() * 600;
+                        }
+                        this.asteroids.push({ x, y, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2, r: 20 + Math.random() * 30 });
                     }
                 },
                 shoot: function() {
                     const rad = this.ship.angle * Math.PI / 180;
-                    this.bullets.push({ x: this.ship.x + Math.cos(rad) * 20, y: this.ship.y + Math.sin(rad) * 20, vx: Math.cos(rad) * 10, vy: Math.sin(rad) * 10 });
+                    this.bullets.push({ x: this.ship.x + Math.cos(rad) * 20, y: this.ship.y + Math.sin(rad) * 20, vx: Math.cos(rad) * 10 + this.ship.vx, vy: Math.sin(rad) * 10 + this.ship.vy });
                 },
                 update: function() {
-                    // Ship controls
                     if (this.keys['ArrowLeft']) this.ship.angle -= 5;
                     if (this.keys['ArrowRight']) this.ship.angle += 5;
                     if (this.keys['ArrowUp']) {
@@ -167,20 +235,18 @@
                     this.ship.x = (this.ship.x + this.ship.vx + 800) % 800;
                     this.ship.y = (this.ship.y + this.ship.vy + 600) % 600;
 
-                    // Bullets
                     this.bullets = this.bullets.filter(b => {
-                        b.x = (b.x + b.vx + 800) % 800;
-                        b.y = (b.y + b.vy + 600) % 600;
-                        return b.x > -10 && b.x < 810 && b.y > -10 && b.y < 610;
+                        b.x += b.vx;
+                        b.y += b.vy;
+                        if (b.x < 0 || b.x > 800 || b.y < 0 || b.y > 600) return false;
+                        return true;
                     });
 
-                    // Asteroids
                     this.asteroids.forEach(a => {
                         a.x = (a.x + a.vx + 800) % 800;
                         a.y = (a.y + a.vy + 600) % 600;
                     });
 
-                    // Collisions bullet-asteroid
                     for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
                         const b = this.bullets[bi];
                         for (let ai = this.asteroids.length - 1; ai >= 0; ai--) {
@@ -189,28 +255,32 @@
                             if (Math.sqrt(dx*dx + dy*dy) < a.r) {
                                 this.asteroids.splice(ai, 1);
                                 this.bullets.splice(bi, 1);
+                                this.score += 10;
                                 break;
                             }
                         }
                     }
 
-                    // Ship-asteroid collision
                     this.asteroids.forEach(a => {
                         const dx = this.ship.x - a.x, dy = this.ship.y - a.y;
                         if (Math.sqrt(dx*dx + dy*dy) < a.r + 15) {
-                            alert('Game Over! Restarting...');
-                            this.ship.x = 400; this.ship.y = 300; this.ship.vx = 0; this.ship.vy = 0;
+                            alert(`Game Over! Score: ${this.score}`);
+                            this.ship.x = 400; this.ship.y = 300; this.ship.vx = 0; this.ship.vy = 0; this.ship.angle = 0;
+                            this.score = 0;
                             this.generateAsteroids();
                         }
                     });
 
-                    if (this.asteroids.length === 0) this.generateAsteroids();
+                    if (this.asteroids.length === 0) {
+                        this.asteroidNum += 2;
+                        this.generateAsteroids();
+                    }
                 },
                 draw: function() {
                     this.ctx.clearRect(0, 0, 800, 600);
                     this.ctx.strokeStyle = '#fff';
+                    this.ctx.fillStyle = '#fff';
 
-                    // Ship
                     this.ctx.save();
                     this.ctx.translate(this.ship.x, this.ship.y);
                     this.ctx.rotate(this.ship.angle * Math.PI / 180);
@@ -219,21 +289,22 @@
                     this.ctx.stroke();
                     if (this.ship.thrusting) {
                         this.ctx.beginPath();
-                        this.ctx.moveTo(-10, 0); this.ctx.lineTo(-30, 0);
-                        this.ctx.stroke();
+                        this.ctx.moveTo(-10, 5); this.ctx.lineTo(-30, 0); this.ctx.lineTo(-10, -5);
+                        this.ctx.fillStyle = '#ff9900';
+                        this.ctx.fill();
                     }
                     this.ctx.restore();
 
-                    // Bullets
-                    this.ctx.fillStyle = '#fff';
                     this.bullets.forEach(b => {
                         this.ctx.beginPath(); this.ctx.arc(b.x, b.y, 2, 0, Math.PI * 2); this.ctx.fill();
                     });
 
-                    // Asteroids
                     this.asteroids.forEach(a => {
                         this.ctx.beginPath(); this.ctx.arc(a.x, a.y, a.r, 0, Math.PI * 2); this.ctx.stroke();
                     });
+
+                    this.ctx.font = '20px Arial';
+                    this.ctx.fillText(`Score: ${this.score}`, 10, 30);
                 },
                 start: function() {
                     this.update = this.update.bind(this);
@@ -241,7 +312,10 @@
                     const loop = () => { this.update(); this.draw(); gameLoop = requestAnimationFrame(loop); };
                     loop();
                 },
-                stop: function() {}
+                stop: function() {
+                    this.score = 0;
+                    this.asteroidNum = 5;
+                }
             },
             breakout: {
                 canvas: null, ctx: null,
@@ -250,9 +324,12 @@
                 bricks: [],
                 keys: {},
                 score: 0,
+                lives: 3,
                 init: function(canvas) {
                     this.canvas = canvas;
                     this.ctx = canvas.getContext('2d');
+                    this.lives = 3;
+                    this.score = 0;
                     document.addEventListener('keydown', (e) => this.keys[e.key] = true);
                     document.addEventListener('keyup', (e) => this.keys[e.key] = false);
                     this.generateBricks();
@@ -261,25 +338,30 @@
                     this.bricks = [];
                     for (let row = 0; row < 5; row++) {
                         for (let col = 0; col < 10; col++) {
-                            this.bricks.push({ x: col * 80, y: row * 30 + 50, w: 80, h: 30, hit: false });
+                            this.bricks.push({ x: col * 80 + 10, y: row * 30 + 50, w: 70, h: 20, hit: false, color: `hsl(${row * 30}, 100%, 50%)` });
                         }
                     }
                 },
                 update: function() {
-                    // Paddle
                     if (this.keys['ArrowLeft']) this.paddle.x = Math.max(0, this.paddle.x - 7);
                     if (this.keys['ArrowRight']) this.paddle.x = Math.min(700, this.paddle.x + 7);
 
-                    // Ball
                     this.ball.x += this.ball.vx;
                     this.ball.y += this.ball.vy;
 
-                    // Wall bounce
                     if (this.ball.x < this.ball.r || this.ball.x > 792 - this.ball.r) this.ball.vx *= -1;
                     if (this.ball.y < this.ball.r) this.ball.vy *= -1;
-                    if (this.ball.y > 592 - this.ball.r) this.resetBall();
+                    if (this.ball.y > 592 - this.ball.r) {
+                        this.lives--;
+                        if (this.lives <= 0) {
+                            alert(`Game Over! Score: ${this.score}`);
+                            this.lives = 3;
+                            this.score = 0;
+                            this.generateBricks();
+                        }
+                        this.resetBall();
+                    }
 
-                    // Paddle collision
                     if (this.ball.y + this.ball.r > this.paddle.y &&
                         this.ball.y - this.ball.r < this.paddle.y + this.paddle.h &&
                         this.ball.x > this.paddle.x &&
@@ -288,7 +370,6 @@
                         this.ball.vx += (this.ball.x - (this.paddle.x + this.paddle.w / 2)) * 0.1;
                     }
 
-                    // Brick collision
                     this.bricks.forEach(b => {
                         if (!b.hit &&
                             this.ball.x + this.ball.r > b.x &&
@@ -297,7 +378,7 @@
                             this.ball.y - this.ball.r < b.y + b.h) {
                             b.hit = true;
                             this.ball.vy *= -1;
-                            this.score++;
+                            this.score += 10;
                         }
                     });
                     this.bricks = this.bricks.filter(b => !b.hit);
@@ -310,12 +391,13 @@
                     this.ctx.beginPath(); this.ctx.arc(this.ball.x, this.ball.y, this.ball.r, 0, Math.PI * 2); this.ctx.fill();
                     this.bricks.forEach(b => {
                         if (!b.hit) {
-                            this.ctx.fillStyle = '#f00';
+                            this.ctx.fillStyle = b.color;
                             this.ctx.fillRect(b.x, b.y, b.w, b.h);
                         }
                     });
                     this.ctx.fillStyle = '#fff';
-                    this.ctx.fillText(`Score: ${this.score}`, 10, 20);
+                    this.ctx.font = '20px Arial';
+                    this.ctx.fillText(`Score: ${this.score} Lives: ${this.lives}`, 10, 30);
                 },
                 resetBall: function() { this.ball.x = 400; this.ball.y = 500; this.ball.vx = 4; this.ball.vy = -4; },
                 start: function() {
@@ -324,7 +406,10 @@
                     const loop = () => { this.update(); this.draw(); gameLoop = requestAnimationFrame(loop); };
                     loop();
                 },
-                stop: function() {}
+                stop: function() {
+                    this.lives = 3;
+                    this.score = 0;
+                }
             },
             duckhunt: {
                 canvas: null, ctx: null,
@@ -335,22 +420,24 @@
                 init: function(canvas) {
                     this.canvas = canvas;
                     this.ctx = canvas.getContext('2d');
+                    this.score = 0;
+                    this.gameTime = 0;
                     canvas.addEventListener('mousemove', (e) => {
                         const rect = canvas.getBoundingClientRect();
                         this.crosshair.x = e.clientX - rect.left;
                         this.crosshair.y = e.clientY - rect.top;
                     });
                     canvas.addEventListener('click', () => this.shoot());
-                    this.spawnDuck();
                 },
                 spawnDuck: function() {
-                    if (this.gameTime % 200 === 0 && Math.random() > 0.5) {
+                    if (this.gameTime % 100 === 0) {
                         const startRight = Math.random() > 0.5;
                         this.ducks.push({
                             x: startRight ? 850 : -50,
-                            y: Math.random() * 500 + 50,
-                            vx: Math.random() * 4 + 2,
+                            y: Math.random() * 400 + 50,
+                            vx: Math.random() * 3 + 2,
                             vy: (Math.random() - 0.5) * 2,
+                            dir: startRight ? -1 : 1,
                             alive: true,
                             hitTime: 0
                         });
@@ -362,6 +449,9 @@
                         if (d.alive && Math.sqrt(dx*dx + dy*dy) < 30) {
                             d.alive = false;
                             d.hitTime = this.gameTime;
+                            d.vx = 0;
+                            d.vy = 5;
+                            d.dir = 0;
                             this.score += 100;
                         }
                     });
@@ -370,42 +460,45 @@
                     this.gameTime++;
                     this.spawnDuck();
                     this.ducks.forEach(d => {
-                        const dir = d.x < 0 ? 1 : -1;
-                        d.x += d.vx * dir;
+                        d.x += d.vx * d.dir;
                         d.y += d.vy;
-                        if (d.y < 0 || d.y > 600) d.vy *= -1;
-                        if (d.x < -50 || d.x > 850) d.alive = false;
+                        if (d.alive && (d.y < 0 || d.y > 550)) d.vy *= -1;
                     });
-                    // Filter out hit ducks after 30 frames (~500ms)
-                    this.ducks = this.ducks.filter(d => d.alive || (this.gameTime - d.hitTime < 30));
+                    this.ducks = this.ducks.filter(d => {
+                        if (!d.alive && this.gameTime - d.hitTime > 30) return false;
+                        if (d.alive && (d.x < -50 || d.x > 850)) return false;
+                        if (d.y > 650) return false;
+                        return true;
+                    });
                 },
                 draw: function() {
                     this.ctx.clearRect(0, 0, 800, 600);
-                    this.ctx.fillStyle = '#0f0'; // Grass
-                    this.ctx.fillRect(0, 550, 800, 50);
                     this.ctx.fillStyle = '#87CEEB'; // Sky
                     this.ctx.fillRect(0, 0, 800, 550);
+                    this.ctx.fillStyle = '#0f0'; // Grass
+                    this.ctx.fillRect(0, 550, 800, 50);
 
-                    // Ducks
                     this.ducks.forEach(d => {
-                        this.ctx.fillStyle = d.alive ? '#ff0' : '#f00';
+                        this.ctx.fillStyle = d.alive ? '#8B4513' : '#f00'; // Brown for alive
                         this.ctx.beginPath();
-                        this.ctx.ellipse(d.x, d.y, 20, 15, 0, 0, Math.PI * 2);
+                        this.ctx.ellipse(d.x, d.y, 30, 20, 0, 0, Math.PI * 2);
                         this.ctx.fill();
                         this.ctx.fillStyle = '#000';
-                        this.ctx.fillRect(d.x - 5, d.y - 5, 2, 2); // Eye
+                        this.ctx.beginPath();
+                        this.ctx.arc(d.x - 10, d.y - 5, 3, 0, Math.PI * 2); // Eye
+                        this.ctx.fill();
                     });
 
-                    // Crosshair
                     this.ctx.strokeStyle = '#f00';
                     this.ctx.lineWidth = 2;
                     this.ctx.beginPath();
-                    this.ctx.moveTo(this.crosshair.x - 10, this.crosshair.y); this.ctx.lineTo(this.crosshair.x + 10, this.crosshair.y);
-                    this.ctx.moveTo(this.crosshair.x, this.crosshair.y - 10); this.ctx.lineTo(this.crosshair.x, this.crosshair.y + 10);
+                    this.ctx.moveTo(this.crosshair.x - 15, this.crosshair.y); this.ctx.lineTo(this.crosshair.x + 15, this.crosshair.y);
+                    this.ctx.moveTo(this.crosshair.x, this.crosshair.y - 15); this.ctx.lineTo(this.crosshair.x, this.crosshair.y + 15);
                     this.ctx.stroke();
 
                     this.ctx.fillStyle = '#fff';
-                    this.ctx.fillText(`Score: ${this.score}`, 10, 20);
+                    this.ctx.font = '20px Arial';
+                    this.ctx.fillText(`Score: ${this.score}`, 10, 30);
                 },
                 start: function() {
                     this.update = this.update.bind(this);
@@ -413,138 +506,179 @@
                     const loop = () => { this.update(); this.draw(); gameLoop = requestAnimationFrame(loop); };
                     loop();
                 },
-                stop: function() {}
+                stop: function() {
+                    this.score = 0;
+                    this.gameTime = 0;
+                    this.ducks = [];
+                }
             },
             pacman: {
                 canvas: null, ctx: null,
                 pacman: { x: 40, y: 300, dir: 0, nextDir: 0, mouth: 0 },
-                ghosts: [{x: 400, y: 300, dir: 0, color: '#f00'}],
+                ghosts: [
+                    {x: 360, y: 280, dir: 0, color: '#f00'},
+                    {x: 400, y: 280, dir: 1, color: '#0ff'},
+                    {x: 440, y: 280, dir: 2, color: '#ff0'},
+                    {x: 380, y: 320, dir: 3, color: '#f0f'}
+                ],
                 dots: [],
                 score: 0,
+                lives: 3,
                 map: [
-                    '1111111111111111',
-                    '1000000000000001',
-                    '1.0.1.0.1.0.1.0',
-                    '1000000000000001',
-                    '1.0.1.0.1.0.1.0',
-                    '1000000000000001',
-                    '1.0.1.0.1.0.1.0',
-                    '1000000000000001',
-                    '1111111111111111'
-                ].join('').split('').map(c => c === '1' ? 1 : c === '.' ? 2 : 0),
+                    '11111111111111111111',
+                    '10000000000000000001',
+                    '10111101111011111001',
+                    '10000000000000000001',
+                    '10111101111011111001',
+                    '10000000000000000001',
+                    '10111101111011111001',
+                    '10000000000000000001',
+                    '10111101111011111001',
+                    '10000000000000000001',
+                    '11111111111111111111'
+                ].join('').split('').map(c => c === '1' ? 1 : 0),
                 tileSize: 40,
                 keys: {},
                 init: function(canvas) {
                     this.canvas = canvas;
                     this.ctx = canvas.getContext('2d');
+                    this.lives = 3;
+                    this.score = 0;
                     document.addEventListener('keydown', (e) => { this.keys[e.key] = true; e.preventDefault(); });
                     document.addEventListener('keyup', (e) => this.keys[e.key] = false);
+                    this.resetGame();
+                },
+                resetGame: function() {
+                    this.pacman = { x: 40, y: 300, dir: 0, nextDir: 0, mouth: 0 };
+                    this.ghosts = [
+                        {x: 360, y: 280, dir: 0, color: '#f00'},
+                        {x: 400, y: 280, dir: 1, color: '#0ff'},
+                        {x: 440, y: 280, dir: 2, color: '#ff0'},
+                        {x: 380, y: 320, dir: 3, color: '#f0f'}
+                    ];
                     this.generateDots();
                 },
                 generateDots: function() {
                     this.dots = [];
-                    for (let y = 0; y < 9; y++) {
-                        for (let x = 0; x < 16; x++) {
-                            if (this.map[y * 16 + x] === 0) this.dots.push({ x: x * this.tileSize + 20, y: y * this.tileSize + 20 });
+                    for (let y = 0; y < 11; y++) {
+                        for (let x = 0; x < 20; x++) {
+                            if (this.map[y * 20 + x] === 0) this.dots.push({x: x * this.tileSize + 20, y: y * this.tileSize + 20});
                         }
                     }
                 },
                 update: function() {
-                    // Set nextDir from keys (last pressed wins)
                     if (this.keys['ArrowRight']) this.pacman.nextDir = 0;
                     if (this.keys['ArrowDown']) this.pacman.nextDir = 1;
                     if (this.keys['ArrowLeft']) this.pacman.nextDir = 2;
                     if (this.keys['ArrowUp']) this.pacman.nextDir = 3;
 
-                    // Try to turn to nextDir if possible
-                    const offset = this.tileSize / 2;
                     let testDx = 0, testDy = 0;
+                    const offset = 1;
                     if (this.pacman.nextDir === 0) testDx = offset;
-                    else if (this.pacman.nextDir === 2) testDx = -offset;
-                    else if (this.pacman.nextDir === 1) testDy = offset;
-                    else if (this.pacman.nextDir === 3) testDy = -offset;
-                    const testTx = Math.floor((this.pacman.x + testDx) / this.tileSize);
-                    const testTy = Math.floor((this.pacman.y + testDy) / this.tileSize);
-                    if (testTx >= 0 && testTx < 16 && testTy >= 0 && testTy < 9 && this.map[testTy * 16 + testTx] !== 1) {
+                    if (this.pacman.nextDir === 1) testDy = offset;
+                    if (this.pacman.nextDir === 2) testDx = -offset;
+                    if (this.pacman.nextDir === 3) testDy = -offset;
+                    let testTx = Math.floor((this.pacman.x + testDx) / this.tileSize);
+                    let testTy = Math.floor((this.pacman.y + testDy) / this.tileSize);
+                    if (testTx < 0 || testTx >= 20) testTx = (testTx + 20) % 20;
+                    if (testTy < 0 || testTy >= 11) testTy = (testTy + 11) % 11;
+                    if (this.map[testTy * 20 + testTx] !== 1) {
                         this.pacman.dir = this.pacman.nextDir;
                     }
 
-                    // Move in current dir if possible
                     let moveX = 0, moveY = 0;
                     if (this.pacman.dir === 0) moveX = 2;
-                    else if (this.pacman.dir === 2) moveX = -2;
-                    else if (this.pacman.dir === 1) moveY = 2;
-                    else if (this.pacman.dir === 3) moveY = -2;
+                    if (this.pacman.dir === 1) moveY = 2;
+                    if (this.pacman.dir === 2) moveX = -2;
+                    if (this.pacman.dir === 3) moveY = -2;
                     let newX = this.pacman.x + moveX;
                     let newY = this.pacman.y + moveY;
                     let newTx = Math.floor(newX / this.tileSize);
                     let newTy = Math.floor(newY / this.tileSize);
-                    if (newTx >= 0 && newTx < 16 && newTy >= 0 && newTy < 9 && this.map[newTy * 16 + newTx] !== 1) {
+                    if (newTx < 0 || newTx >= 20) newTx = (newTx + 20) % 20;
+                    if (newTy < 0 || newTy >= 11) newTy = (newTy + 11) % 11;
+                    if (this.map[newTy * 20 + newTx] !== 1) {
                         this.pacman.x = newX;
                         this.pacman.y = newY;
                     }
 
-                    // Eat dots
-                    this.dots.forEach((d, i) => {
+                    this.dots = this.dots.filter(d => {
                         const dx = this.pacman.x - d.x, dy = this.pacman.y - d.y;
-                        if (Math.sqrt(dx * dx + dy * dy) < 15) {
-                            this.dots.splice(i, 1);
+                        if (Math.sqrt(dx*dx + dy*dy) < 15) {
                             this.score += 10;
-                            const dotTx = Math.floor(d.x / this.tileSize);
-                            const dotTy = Math.floor(d.y / this.tileSize);
-                            this.map[dotTy * 16 + dotTx] = 2;
+                            return false;
                         }
+                        return true;
                     });
 
-                    // Ghosts movement
                     this.ghosts.forEach(g => {
-                        // Compute target dir
+                        let targetDir = g.dir;
                         const dx = this.pacman.x - g.x;
                         const dy = this.pacman.y - g.y;
-                        let targetDir;
-                        if (Math.abs(dx) >= Math.abs(dy)) {
+                        if (Math.random() < 0.3) { // Random element
+                            targetDir = Math.floor(Math.random() * 4);
+                        } else if (Math.abs(dx) > Math.abs(dy)) {
                             targetDir = dx > 0 ? 0 : 2;
                         } else {
                             targetDir = dy > 0 ? 1 : 3;
                         }
 
-                        // Try to turn
                         let testDx = 0, testDy = 0;
-                        if (targetDir === 0) testDx = 10;
-                        else if (targetDir === 2) testDx = -10;
-                        else if (targetDir === 1) testDy = 10;
-                        else if (targetDir === 3) testDy = -10;
-                        const testTx = Math.floor((g.x + testDx) / this.tileSize);
-                        const testTy = Math.floor((g.y + testDy) / this.tileSize);
-                        if (testTx >= 0 && testTx < 16 && testTy >= 0 && testTy < 9 && this.map[testTy * 16 + testTx] !== 1) {
+                        if (targetDir === 0) testDx = 1;
+                        if (targetDir === 1) testDy = 1;
+                        if (targetDir === 2) testDx = -1;
+                        if (targetDir === 3) testDy = -1;
+                        let testTx = Math.floor((g.x + testDx) / this.tileSize);
+                        let testTy = Math.floor((g.y + testDy) / this.tileSize);
+                        if (testTx < 0 || testTx >= 20) testTx = (testTx + 20) % 20;
+                        if (testTy < 0 || testTy >= 11) testTy = (testTy + 11) % 11;
+                        if (this.map[testTy * 20 + testTx] !== 1) {
                             g.dir = targetDir;
                         }
 
-                        // Move
                         let gMoveX = 0, gMoveY = 0;
                         if (g.dir === 0) gMoveX = 1;
-                        else if (g.dir === 2) gMoveX = -1;
-                        else if (g.dir === 1) gMoveY = 1;
-                        else if (g.dir === 3) gMoveY = -1;
+                        if (g.dir === 1) gMoveY = 1;
+                        if (g.dir === 2) gMoveX = -1;
+                        if (g.dir === 3) gMoveY = -1;
                         let gNewX = g.x + gMoveX;
                         let gNewY = g.y + gMoveY;
                         let gNewTx = Math.floor(gNewX / this.tileSize);
                         let gNewTy = Math.floor(gNewY / this.tileSize);
-                        if (gNewTx >= 0 && gNewTx < 16 && gNewTy >= 0 && gNewTy < 9 && this.map[gNewTy * 16 + gNewTx] !== 1) {
+                        if (gNewTx < 0 || gNewTx >= 20) gNewTx = (gNewTx + 20) % 20;
+                        if (gNewTy < 0 || gNewTy >= 11) gNewTy = (gNewTy + 11) % 11;
+                        if (this.map[gNewTy * 20 + gNewTx] !== 1) {
                             g.x = gNewX;
                             g.y = gNewY;
+                        } else {
+                            g.dir = Math.floor(Math.random() * 4);
+                        }
+
+                        const pdx = this.pacman.x - g.x, pdy = this.pacman.y - g.y;
+                        if (Math.sqrt(pdx*pdx + pdy*pdy) < 30) {
+                            this.lives--;
+                            if (this.lives <= 0) {
+                                alert(`Game Over! Score: ${this.score}`);
+                                this.lives = 3;
+                                this.score = 0;
+                            }
+                            this.resetGame();
                         }
                     });
 
                     this.pacman.mouth = (this.pacman.mouth + 0.2) % (Math.PI * 2);
+
+                    if (this.dots.length === 0) {
+                        alert('Level Complete!');
+                        this.resetGame();
+                    }
                 },
                 draw: function() {
                     this.ctx.clearRect(0, 0, 800, 600);
 
-                    // Map
-                    for (let y = 0; y < 9; y++) {
-                        for (let x = 0; x < 16; x++) {
-                            const val = this.map[y * 16 + x];
+                    for (let y = 0; y < 11; y++) {
+                        for (let x = 0; x < 20; x++) {
+                            const val = this.map[y * 20 + x];
                             if (val === 1) {
                                 this.ctx.fillStyle = '#00f';
                                 this.ctx.fillRect(x * this.tileSize, y * this.tileSize, this.tileSize, this.tileSize);
@@ -552,31 +686,31 @@
                         }
                     }
 
-                    // Dots
                     this.ctx.fillStyle = '#ff0';
                     this.dots.forEach(d => {
-                        this.ctx.beginPath(); this.ctx.arc(d.x, d.y, 3, 0, Math.PI * 2); this.ctx.fill();
+                        this.ctx.beginPath(); this.ctx.arc(d.x, d.y, 5, 0, Math.PI * 2); this.ctx.fill();
                     });
 
-                    // Pacman
                     this.ctx.fillStyle = '#ff0';
                     this.ctx.save();
                     this.ctx.translate(this.pacman.x, this.pacman.y);
-                    this.ctx.rotate((this.pacman.dir * 90) * Math.PI / 180);
+                    this.ctx.rotate(this.pacman.dir * Math.PI / 2);
                     this.ctx.beginPath();
-                    this.ctx.arc(0, 0, 20, this.pacman.mouth / 2, -this.pacman.mouth / 2, false);
+                    this.ctx.arc(0, 0, 20, this.pacman.mouth / 2, Math.PI * 2 - this.pacman.mouth / 2);
                     this.ctx.lineTo(0, 0);
                     this.ctx.fill();
                     this.ctx.restore();
 
-                    // Ghosts
                     this.ghosts.forEach(g => {
                         this.ctx.fillStyle = g.color;
-                        this.ctx.beginPath(); this.ctx.arc(g.x, g.y, 20, 0, Math.PI * 2); this.ctx.fill();
+                        this.ctx.beginPath();
+                        this.ctx.arc(g.x, g.y, 20, 0, Math.PI * 2);
+                        this.ctx.fill();
                     });
 
                     this.ctx.fillStyle = '#fff';
-                    this.ctx.fillText(`Score: ${this.score}`, 10, 20);
+                    this.ctx.font = '20px Arial';
+                    this.ctx.fillText(`Score: ${this.score} Lives: ${this.lives}`, 10, 30);
                 },
                 start: function() {
                     this.update = this.update.bind(this);
@@ -584,16 +718,23 @@
                     const loop = () => { this.update(); this.draw(); gameLoop = requestAnimationFrame(loop); };
                     loop();
                 },
-                stop: function() {}
+                stop: function() {
+                    this.lives = 3;
+                    this.score = 0;
+                }
             },
             '2048': {
                 canvas: null, ctx: null,
                 board: [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
                 score: 0,
                 keys: {},
+                gameOver: false,
                 init: function(canvas) {
                     this.canvas = canvas;
                     this.ctx = canvas.getContext('2d');
+                    this.score = 0;
+                    this.gameOver = false;
+                    this.board = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
                     document.addEventListener('keydown', (e) => { this.keys[e.key] = true; e.preventDefault(); });
                     document.addEventListener('keyup', (e) => this.keys[e.key] = false);
                     this.addRandomTile();
@@ -604,78 +745,70 @@
                     this.board.forEach((row, y) => row.forEach((val, x) => { if (val === 0) empty.push({x, y}); }));
                     if (empty.length) {
                         const pos = empty[Math.floor(Math.random() * empty.length)];
-                        this.board[pos.y][pos.x] = Math.random() > 0.5 ? 2 : 4;
+                        this.board[pos.y][pos.x] = Math.random() > 0.9 ? 4 : 2;
                     }
                 },
                 move: function(dir) {
+                    if (this.gameOver) return;
                     let moved = false;
                     const newBoard = this.board.map(row => [...row]);
+                    const merge = (arr) => {
+                        let merged = arr.filter(n => n !== 0);
+                        for (let i = 0; i < merged.length - 1; i++) {
+                            if (merged[i] === merged[i + 1]) {
+                                merged[i] *= 2;
+                                this.score += merged[i];
+                                merged.splice(i + 1, 1);
+                                moved = true;
+                                i--;
+                            }
+                        }
+                        while (merged.length < 4) merged.push(0);
+                        return merged;
+                    };
                     if (dir === 'ArrowLeft' || dir === 'a') {
                         for (let y = 0; y < 4; y++) {
-                            let row = this.board[y].filter(n => n !== 0);
-                            for (let i = 0; i < row.length - 1; i++) {
-                                if (row[i] === row[i + 1]) {
-                                    row[i] *= 2;
-                                    this.score += row[i];
-                                    row.splice(i + 1, 1);
-                                    moved = true;
-                                    i--; // Check again after splice
-                                }
-                            }
-                            while (row.length < 4) row.push(0);
-                            newBoard[y] = row;
+                            newBoard[y] = merge(this.board[y]);
                         }
                     }
                     if (dir === 'ArrowRight' || dir === 'd') {
                         for (let y = 0; y < 4; y++) {
-                            let row = this.board[y].filter(n => n !== 0).reverse();
-                            for (let i = 0; i < row.length - 1; i++) {
-                                if (row[i] === row[i + 1]) {
-                                    row[i] *= 2;
-                                    this.score += row[i];
-                                    row.splice(i + 1, 1);
-                                    moved = true;
-                                    i--;
-                                }
-                            }
-                            while (row.length < 4) row.push(0);
-                            newBoard[y] = row.reverse();
+                            newBoard[y] = merge(this.board[y].reverse()).reverse();
                         }
                     }
                     if (dir === 'ArrowUp' || dir === 'w') {
                         for (let x = 0; x < 4; x++) {
-                            let col = [this.board[0][x], this.board[1][x], this.board[2][x], this.board[3][x]].filter(n => n !== 0);
-                            for (let i = 0; i < col.length - 1; i++) {
-                                if (col[i] === col[i + 1]) {
-                                    col[i] *= 2;
-                                    this.score += col[i];
-                                    col.splice(i + 1, 1);
-                                    moved = true;
-                                    i--;
-                                }
-                            }
-                            while (col.length < 4) col.unshift(0);
+                            let col = [this.board[0][x], this.board[1][x], this.board[2][x], this.board[3][x]];
+                            col = merge(col);
                             for (let y = 0; y < 4; y++) newBoard[y][x] = col[y];
                         }
                     }
                     if (dir === 'ArrowDown' || dir === 's') {
                         for (let x = 0; x < 4; x++) {
-                            let col = [this.board[0][x], this.board[1][x], this.board[2][x], this.board[3][x]].filter(n => n !== 0).reverse();
-                            for (let i = 0; i < col.length - 1; i++) {
-                                if (col[i] === col[i + 1]) {
-                                    col[i] *= 2;
-                                    this.score += col[i];
-                                    col.splice(i + 1, 1);
-                                    moved = true;
-                                    i--;
-                                }
-                            }
-                            while (col.length < 4) col.push(0);
-                            for (let y = 0; y < 4; y++) newBoard[y][x] = col[3 - y];
+                            let col = [this.board[0][x], this.board[1][x], this.board[2][x], this.board[3][x]].reverse();
+                            col = merge(col).reverse();
+                            for (let y = 0; y < 4; y++) newBoard[y][x] = col[y];
                         }
                     }
-                    this.board = newBoard;
-                    if (moved) this.addRandomTile();
+                    if (moved) {
+                        this.board = newBoard;
+                        this.addRandomTile();
+                    }
+                    this.checkGameOver();
+                },
+                checkGameOver: function() {
+                    if (this.board.flat().includes(0)) return this.gameOver = false;
+                    for (let y = 0; y < 4; y++) {
+                        for (let x = 0; x < 3; x++) {
+                            if (this.board[y][x] === this.board[y][x+1]) return this.gameOver = false;
+                        }
+                    }
+                    for (let x = 0; x < 4; x++) {
+                        for (let y = 0; y < 3; y++) {
+                            if (this.board[y][x] === this.board[y+1][x]) return this.gameOver = false;
+                        }
+                    }
+                    this.gameOver = true;
                 },
                 update: function() {
                     if (this.keys['ArrowLeft'] || this.keys['a']) { this.move('ArrowLeft'); this.keys['ArrowLeft'] = this.keys['a'] = false; }
@@ -689,15 +822,15 @@
                     for (let y = 0; y < 4; y++) {
                         for (let x = 0; x < 4; x++) {
                             const val = this.board[y][x];
-                            this.ctx.fillStyle = val ? `hsl(${(Math.log2(val) * 30) % 360}, 70%, 70%)` : '#ccc';
+                            this.ctx.fillStyle = val ? `hsl(${90 - Math.log2(val) * 5}, 70%, ${50 + Math.log2(val) * 5}%)` : '#222';
                             this.ctx.fillRect(x * ts, y * ts, ts, ts);
                             this.ctx.strokeStyle = '#000';
                             this.ctx.strokeRect(x * ts, y * ts, ts, ts);
                             if (val) {
-                                this.ctx.fillStyle = '#000';
+                                this.ctx.fillStyle = val > 8 ? '#fff' : '#000';
                                 this.ctx.font = 'bold 40px Arial';
                                 this.ctx.textAlign = 'center';
-                                this.ctx.fillText(val.toString(), x * ts + 50, y * ts + 65);
+                                this.ctx.fillText(val, x * ts + 50, y * ts + 65);
                             }
                         }
                     }
@@ -705,104 +838,12 @@
                     this.ctx.font = '20px Arial';
                     this.ctx.textAlign = 'left';
                     this.ctx.fillText(`Score: ${this.score}`, 10, 30);
-                },
-                start: function() {
-                    this.update = this.update.bind(this);
-                    this.draw = this.draw.bind(this);
-                    const loop = () => { this.update(); this.draw(); gameLoop = requestAnimationFrame(loop); };
-                    loop();
-                },
-                stop: function() {}
-            },
-            tictactoe: {
-                canvas: null, ctx: null,
-                board: [[0,0,0],[0,0,0],[0,0,0]],
-                currentPlayer: 1, // 1:X, -1:O
-                gameOver: false,
-                winner: 0,
-                init: function(canvas) {
-                    this.canvas = canvas;
-                    this.ctx = canvas.getContext('2d');
-                    canvas.addEventListener('click', (e) => this.handleClick(e));
-                },
-                handleClick: function(e) {
-                    if (this.gameOver) return;
-                    const rect = this.canvas.getBoundingClientRect();
-                    const x = Math.floor((e.clientX - rect.left) / 100);
-                    const y = Math.floor((e.clientY - rect.top) / 100);
-                    if (this.board[y][x] === 0) {
-                        this.board[y][x] = this.currentPlayer;
-                        this.checkWin();
-                        if (!this.gameOver) this.currentPlayer *= -1;
-                        // AI move if O's turn
-                        if (this.currentPlayer === -1 && !this.gameOver) {
-                            const empty = [];
-                            this.board.forEach((row, yy) => row.forEach((cell, xx) => { if (cell === 0) empty.push([yy, xx]); }));
-                            if (empty.length) {
-                                const [ay, ax] = empty[Math.floor(Math.random() * empty.length)];
-                                this.board[ay][ax] = -1;
-                                this.checkWin();
-                                if (!this.gameOver) this.currentPlayer = 1;
-                            }
-                        }
-                    }
-                },
-                checkWin: function() {
-                    const lines = [
-                        [[0,0],[0,1],[0,2]], [[1,0],[1,1],[1,2]], [[2,0],[2,1],[2,2]], // rows
-                        [[0,0],[1,0],[2,0]], [[0,1],[1,1],[2,1]], [[0,2],[1,2],[2,2]], // cols
-                        [[0,0],[1,1],[2,2]], [[0,2],[1,1],[2,0]] // diags
-                    ];
-                    for (let line of lines) {
-                        const [a, b, c] = line.map(([yy, xx]) => this.board[yy][xx]);
-                        if (a === b && b === c && a !== 0) {
-                            this.winner = a;
-                            this.gameOver = true;
-                            return;
-                        }
-                    }
-                    if (this.board.flat().every(cell => cell !== 0)) {
-                        this.gameOver = true;
-                    }
-                },
-                update: function() {
-                    // Empty update for animation loop
-                },
-                draw: function() {
-                    this.ctx.clearRect(0, 0, 300, 300);
-                    this.ctx.strokeStyle = '#fff';
-                    this.ctx.lineWidth = 5;
-                    // Grid
-                    this.ctx.beginPath();
-                    this.ctx.moveTo(100, 0); this.ctx.lineTo(100, 300);
-                    this.ctx.moveTo(200, 0); this.ctx.lineTo(200, 300);
-                    this.ctx.moveTo(0, 100); this.ctx.lineTo(300, 100);
-                    this.ctx.moveTo(0, 200); this.ctx.lineTo(300, 200);
-                    this.ctx.stroke();
-
-                    // Marks
-                    this.board.forEach((row, y) => {
-                        row.forEach((cell, x) => {
-                            if (cell === 1) {
-                                this.ctx.font = 'bold 80px Arial';
-                                this.ctx.textAlign = 'center';
-                                this.ctx.fillStyle = '#fff';
-                                this.ctx.fillText('X', x * 100 + 50, (y + 1) * 100 - 20);
-                            } else if (cell === -1) {
-                                this.ctx.beginPath();
-                                this.ctx.arc(x * 100 + 50, y * 100 + 50, 30, 0, Math.PI * 2);
-                                this.ctx.stroke();
-                            }
-                        });
-                    });
-
                     if (this.gameOver) {
+                        this.ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                        this.ctx.fillRect(0, 150, 400, 100);
                         this.ctx.fillStyle = '#fff';
-                        this.ctx.font = '20px Arial';
-                        this.ctx.textAlign = 'center';
-                        if (this.winner > 0) this.ctx.fillText('X Wins!', 150, 280);
-                        else if (this.winner < 0) this.ctx.fillText('O Wins!', 150, 280);
-                        else this.ctx.fillText('Draw!', 150, 280);
+                        this.ctx.font = '30px Arial';
+                        this.ctx.fillText('Game Over!', 100, 200);
                     }
                 },
                 start: function() {
@@ -812,16 +853,158 @@
                     loop();
                 },
                 stop: function() {
+                    this.score = 0;
+                    this.gameOver = false;
+                }
+            },
+            tictactoe: {
+                canvas: null, ctx: null,
+                board: [[0,0,0],[0,0,0],[0,0,0]],
+                currentPlayer: 1,
+                gameOver: false,
+                winner: 0,
+                init: function(canvas) {
+                    this.canvas = canvas;
+                    this.ctx = canvas.getContext('2d');
+                    this.reset();
+                    canvas.addEventListener('click', (e) => this.handleClick(e));
+                },
+                reset: function() {
                     this.board = [[0,0,0],[0,0,0],[0,0,0]];
                     this.currentPlayer = 1;
                     this.gameOver = false;
                     this.winner = 0;
+                },
+                handleClick: function(e) {
+                    if (this.gameOver || this.currentPlayer !== 1) return;
+                    const rect = this.canvas.getBoundingClientRect();
+                    const x = Math.floor((e.clientX - rect.left) / 100);
+                    const y = Math.floor((e.clientY - rect.top) / 100);
+                    if (this.board[y][x] === 0) {
+                        this.board[y][x] = 1;
+                        this.checkWin();
+                        if (!this.gameOver) {
+                            this.currentPlayer = -1;
+                            this.aiMove();
+                        }
+                    }
+                },
+                aiMove: function() {
+                    if (this.gameOver) return;
+                    let bestScore = -Infinity;
+                    let bestMove = null;
+                    for (let y = 0; y < 3; y++) {
+                        for (let x = 0; x < 3; x++) {
+                            if (this.board[y][x] === 0) {
+                                this.board[y][x] = -1;
+                                let score = this.minimax(this.board, 1);
+                                this.board[y][x] = 0;
+                                if (score > bestScore) {
+                                    bestScore = score;
+                                    bestMove = {y, x};
+                                }
+                            }
+                        }
+                    }
+                    if (bestMove) {
+                        this.board[bestMove.y][bestMove.x] = -1;
+                        this.checkWin();
+                        this.currentPlayer = 1;
+                    }
+                },
+                minimax: function(board, player) {
+                    const result = this.checkWinSim(board);
+                    if (result === 1) return -10;
+                    if (result === -1) return 10;
+                    if (result === 'draw') return 0;
+
+                    let bestScore = player === -1 ? -Infinity : Infinity;
+                    for (let y = 0; y < 3; y++) {
+                        for (let x = 0; x < 3; x++) {
+                            if (board[y][x] === 0) {
+                                board[y][x] = player;
+                                let score = this.minimax(board, -player);
+                                board[y][x] = 0;
+                                bestScore = player === -1 ? Math.max(score, bestScore) : Math.min(score, bestScore);
+                            }
+                        }
+                    }
+                    return bestScore;
+                },
+                checkWinSim: function(board) {
+                    const lines = [
+                        [board[0][0], board[0][1], board[0][2]],
+                        [board[1][0], board[1][1], board[1][2]],
+                        [board[2][0], board[2][1], board[2][2]],
+                        [board[0][0], board[1][0], board[2][0]],
+                        [board[0][1], board[1][1], board[2][1]],
+                        [board[0][2], board[1][2], board[2][2]],
+                        [board[0][0], board[1][1], board[2][2]],
+                        [board[0][2], board[1][1], board[2][0]],
+                    ];
+                    for (let line of lines) {
+                        if (line[0] === line[1] && line[1] === line[2] && line[0] !== 0) {
+                            return line[0];
+                        }
+                    }
+                    if (board.flat().every(cell => cell !== 0)) return 'draw';
+                    return null;
+                },
+                checkWin: function() {
+                    this.winner = this.checkWinSim(this.board);
+                    if (this.winner || this.winner === 'draw') this.gameOver = true;
+                },
+                update: function() {},
+                draw: function() {
+                    this.ctx.clearRect(0, 0, 300, 300);
+                    this.ctx.strokeStyle = '#fff';
+                    this.ctx.lineWidth = 5;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(100, 0); this.ctx.lineTo(100, 300);
+                    this.ctx.moveTo(200, 0); this.ctx.lineTo(200, 300);
+                    this.ctx.moveTo(0, 100); this.ctx.lineTo(300, 100);
+                    this.ctx.moveTo(0, 200); this.ctx.lineTo(300, 200);
+                    this.ctx.stroke();
+
+                    this.board.forEach((row, y) => {
+                        row.forEach((cell, x) => {
+                            if (cell === 1) {
+                                this.ctx.beginPath();
+                                this.ctx.moveTo(x*100 + 20, y*100 + 20);
+                                this.ctx.lineTo((x+1)*100 - 20, (y+1)*100 - 20);
+                                this.ctx.moveTo(x*100 + 20, (y+1)*100 - 20);
+                                this.ctx.lineTo((x+1)*100 - 20, y*100 + 20);
+                                this.ctx.stroke();
+                            } else if (cell === -1) {
+                                this.ctx.beginPath();
+                                this.ctx.arc(x*100 + 50, y*100 + 50, 40, 0, Math.PI * 2);
+                                this.ctx.stroke();
+                            }
+                        });
+                    });
+
+                    if (this.gameOver) {
+                        this.ctx.fillStyle = '#fff';
+                        this.ctx.font = '20px Arial';
+                        this.ctx.textAlign = 'center';
+                        let msg = this.winner === 'draw' ? 'Draw!' : this.winner === 1 ? 'X Wins!' : 'O Wins!';
+                        this.ctx.fillText(msg, 150, 280);
+                    }
+                },
+                start: function() {
+                    this.update = this.update.bind(this);
+                    this.draw = this.draw.bind(this);
+                    const loop = () => { this.update(); this.draw(); gameLoop = requestAnimationFrame(loop); };
+                    loop();
+                },
+                stop: function() {
+                    this.reset();
                 }
             }
         };
 
         // Start with first game
-        gameSelect.dispatchEvent(new Event('change'));
+        switchGame();
     </script>
 </body>
 </html>
