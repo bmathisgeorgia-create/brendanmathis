@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -25,7 +24,7 @@
         <option value="2048">6. 2048</option>
         <option value="tictactoe">7. Tic-Tac-Toe</option>
     </select>
-    <div id="instructions">Use arrow keys/WASD for movement, space to shoot/pause where applicable. Mouse for aiming in Duck Hunt.</div>
+    <div id="instructions">Use arrow keys for player 1 / WASD for player 2 where applicable. Space to shoot in Asteroids. Mouse for Duck Hunt. Arrow keys for 2048 and Pac-Man.</div>
     <div id="gameContainer">
         <canvas id="pongCanvas" width="800" height="600"></canvas>
         <canvas id="asteroidsCanvas" width="800" height="600"></canvas>
@@ -79,10 +78,10 @@
                     document.addEventListener('keyup', (e) => this.keys[e.key] = false);
                 },
                 update: function() {
-                    // Paddle movement
-                    if (this.keys['ArrowUp'] || this.keys['w']) this.paddle1.y = Math.max(0, this.paddle1.y - 7);
-                    if (this.keys['ArrowDown'] || this.keys['s']) this.paddle1.y = Math.min(500, this.paddle1.y + 7);
-                    if (this.keys['w']) this.paddle2.y = Math.max(0, this.paddle2.y - 7); // AI simple
+                    // Paddle movement - fixed key bindings
+                    if (this.keys['ArrowUp']) this.paddle1.y = Math.max(0, this.paddle1.y - 7);
+                    if (this.keys['ArrowDown']) this.paddle1.y = Math.min(500, this.paddle1.y + 7);
+                    if (this.keys['w']) this.paddle2.y = Math.max(0, this.paddle2.y - 7);
                     if (this.keys['s']) this.paddle2.y = Math.min(500, this.paddle2.y + 7);
 
                     // Ball movement
@@ -93,10 +92,16 @@
                     if (this.ball.y < this.ball.r || this.ball.y > 590 - this.ball.r) this.ball.vy *= -1;
 
                     // Paddle collision
-                    if (this.ball.x - this.ball.r < this.paddle1.x + this.paddle1.w && this.ball.y > this.paddle1.y && this.ball.y < this.paddle1.y + this.paddle1.h) {
+                    if (this.ball.x - this.ball.r < this.paddle1.x + this.paddle1.w &&
+                        this.ball.x + this.ball.r > this.paddle1.x &&
+                        this.ball.y > this.paddle1.y &&
+                        this.ball.y < this.paddle1.y + this.paddle1.h) {
                         this.ball.vx *= -1;
                     }
-                    if (this.ball.x + this.ball.r > this.paddle2.x && this.ball.y > this.paddle2.y && this.ball.y < this.paddle2.y + this.paddle2.h) {
+                    if (this.ball.x + this.ball.r > this.paddle2.x &&
+                        this.ball.x - this.ball.r < this.paddle2.x + this.paddle2.w &&
+                        this.ball.y > this.paddle2.y &&
+                        this.ball.y < this.paddle2.y + this.paddle2.h) {
                         this.ball.vx *= -1;
                     }
 
@@ -112,8 +117,13 @@
                     this.ctx.beginPath(); this.ctx.arc(this.ball.x, this.ball.y, this.ball.r, 0, Math.PI * 2); this.ctx.fill();
                     this.ctx.fillText(`Score: ${this.score1} - ${this.score2}`, 350, 50);
                 },
-                resetBall: function() { this.ball.x = 400; this.ball.y = 300; this.ball.vx = this.ball.vx > 0 ? 5 : -5; this.ball.vy = Math.random() * 6 - 3; },
-                start: function() { 
+                resetBall: function() {
+                    this.ball.x = 400;
+                    this.ball.y = 300;
+                    this.ball.vx = Math.random() > 0.5 ? 5 : -5;
+                    this.ball.vy = (Math.random() - 0.5) * 6;
+                },
+                start: function() {
                     this.update = this.update.bind(this);
                     this.draw = this.draw.bind(this);
                     const loop = () => { this.update(); this.draw(); gameLoop = requestAnimationFrame(loop); };
@@ -153,7 +163,7 @@
                         this.ship.vx += Math.cos(rad) * 0.2;
                         this.ship.vy += Math.sin(rad) * 0.2;
                     } else this.ship.thrusting = false;
-                    this.ship.vx *= 0.99; this.ship.vy *= 0.99; // Friction
+                    this.ship.vx *= 0.99; this.ship.vy *= 0.99;
                     this.ship.x = (this.ship.x + this.ship.vx + 800) % 800;
                     this.ship.y = (this.ship.y + this.ship.vy + 600) % 600;
 
@@ -170,15 +180,28 @@
                         a.y = (a.y + a.vy + 600) % 600;
                     });
 
-                    // Collisions
-                    this.bullets.forEach((b, bi) => {
-                        this.asteroids.forEach((a, ai) => {
+                    // Collisions bullet-asteroid
+                    for (let bi = this.bullets.length - 1; bi >= 0; bi--) {
+                        const b = this.bullets[bi];
+                        for (let ai = this.asteroids.length - 1; ai >= 0; ai--) {
+                            const a = this.asteroids[ai];
                             const dx = b.x - a.x, dy = b.y - a.y;
                             if (Math.sqrt(dx*dx + dy*dy) < a.r) {
                                 this.asteroids.splice(ai, 1);
                                 this.bullets.splice(bi, 1);
+                                break;
                             }
-                        });
+                        }
+                    }
+
+                    // Ship-asteroid collision
+                    this.asteroids.forEach(a => {
+                        const dx = this.ship.x - a.x, dy = this.ship.y - a.y;
+                        if (Math.sqrt(dx*dx + dy*dy) < a.r + 15) {
+                            alert('Game Over! Restarting...');
+                            this.ship.x = 400; this.ship.y = 300; this.ship.vx = 0; this.ship.vy = 0;
+                            this.generateAsteroids();
+                        }
                     });
 
                     if (this.asteroids.length === 0) this.generateAsteroids();
@@ -202,8 +225,9 @@
                     this.ctx.restore();
 
                     // Bullets
+                    this.ctx.fillStyle = '#fff';
                     this.bullets.forEach(b => {
-                        this.ctx.beginPath(); this.ctx.arc(b.x, b.y, 2, 0, Math.PI * 2); this.ctx.fillStyle = '#fff'; this.ctx.fill();
+                        this.ctx.beginPath(); this.ctx.arc(b.x, b.y, 2, 0, Math.PI * 2); this.ctx.fill();
                     });
 
                     // Asteroids
@@ -256,14 +280,21 @@
                     if (this.ball.y > 592 - this.ball.r) this.resetBall();
 
                     // Paddle collision
-                    if (this.ball.y + this.ball.r > this.paddle.y && this.ball.x > this.paddle.x && this.ball.x < this.paddle.x + this.paddle.w) {
+                    if (this.ball.y + this.ball.r > this.paddle.y &&
+                        this.ball.y - this.ball.r < this.paddle.y + this.paddle.h &&
+                        this.ball.x > this.paddle.x &&
+                        this.ball.x < this.paddle.x + this.paddle.w) {
                         this.ball.vy *= -1;
                         this.ball.vx += (this.ball.x - (this.paddle.x + this.paddle.w / 2)) * 0.1;
                     }
 
                     // Brick collision
                     this.bricks.forEach(b => {
-                        if (!b.hit && this.ball.x > b.x && this.ball.x < b.x + b.w && this.ball.y > b.y && this.ball.y < b.y + b.h) {
+                        if (!b.hit &&
+                            this.ball.x + this.ball.r > b.x &&
+                            this.ball.x - this.ball.r < b.x + b.w &&
+                            this.ball.y + this.ball.r > b.y &&
+                            this.ball.y - this.ball.r < b.y + b.h) {
                             b.hit = true;
                             this.ball.vy *= -1;
                             this.score++;
@@ -314,16 +345,24 @@
                 },
                 spawnDuck: function() {
                     if (this.gameTime % 200 === 0 && Math.random() > 0.5) {
-                        this.ducks.push({ x: Math.random() > 0.5 ? -50 : 850, y: Math.random() * 500 + 50, vx: Math.random() * 4 + 2, vy: (Math.random() - 0.5) * 2, alive: true });
+                        const startRight = Math.random() > 0.5;
+                        this.ducks.push({
+                            x: startRight ? 850 : -50,
+                            y: Math.random() * 500 + 50,
+                            vx: Math.random() * 4 + 2,
+                            vy: (Math.random() - 0.5) * 2,
+                            alive: true,
+                            hitTime: 0
+                        });
                     }
                 },
                 shoot: function() {
-                    this.ducks.forEach((d, i) => {
+                    this.ducks.forEach(d => {
                         const dx = this.crosshair.x - d.x, dy = this.crosshair.y - d.y;
                         if (d.alive && Math.sqrt(dx*dx + dy*dy) < 30) {
                             d.alive = false;
+                            d.hitTime = this.gameTime;
                             this.score += 100;
-                            setTimeout(() => this.ducks.splice(i, 1), 500);
                         }
                     });
                 },
@@ -331,12 +370,14 @@
                     this.gameTime++;
                     this.spawnDuck();
                     this.ducks.forEach(d => {
-                        d.x += d.vx * (d.x < 0 ? 1 : -1);
+                        const dir = d.x < 0 ? 1 : -1;
+                        d.x += d.vx * dir;
                         d.y += d.vy;
                         if (d.y < 0 || d.y > 600) d.vy *= -1;
                         if (d.x < -50 || d.x > 850) d.alive = false;
                     });
-                    this.ducks = this.ducks.filter(d => d.alive && d.x > -50 && d.x < 850);
+                    // Filter out hit ducks after 30 frames (~500ms)
+                    this.ducks = this.ducks.filter(d => d.alive || (this.gameTime - d.hitTime < 30));
                 },
                 draw: function() {
                     this.ctx.clearRect(0, 0, 800, 600);
@@ -376,11 +417,11 @@
             },
             pacman: {
                 canvas: null, ctx: null,
-                pacman: { x: 40, y: 300, dir: 0, nextDir: 0, mouth: 0 }, // 0:right,1:down,2:left,3:up
-                ghosts: [{x:400,y:300,vx:2,vy:0,color:'#f00'}],
+                pacman: { x: 40, y: 300, dir: 0, nextDir: 0, mouth: 0 },
+                ghosts: [{x: 400, y: 300, dir: 0, color: '#f00'}],
                 dots: [],
                 score: 0,
-                map: [ // Simple maze 1=wall, 0=dot, .=empty
+                map: [
                     '1111111111111111',
                     '1000000000000001',
                     '1.0.1.0.1.0.1.0',
@@ -390,61 +431,109 @@
                     '1.0.1.0.1.0.1.0',
                     '1000000000000001',
                     '1111111111111111'
-                ].join('').split('').map(c => c==='1'?1:c==='.'?2:0),
+                ].join('').split('').map(c => c === '1' ? 1 : c === '.' ? 2 : 0),
                 tileSize: 40,
                 keys: {},
                 init: function(canvas) {
                     this.canvas = canvas;
                     this.ctx = canvas.getContext('2d');
                     document.addEventListener('keydown', (e) => { this.keys[e.key] = true; e.preventDefault(); });
+                    document.addEventListener('keyup', (e) => this.keys[e.key] = false);
                     this.generateDots();
                 },
                 generateDots: function() {
                     this.dots = [];
                     for (let y = 0; y < 9; y++) {
                         for (let x = 0; x < 16; x++) {
-                            if (this.map[y*16 + x] === 0) this.dots.push({x: x*this.tileSize + 20, y: y*this.tileSize + 20});
+                            if (this.map[y * 16 + x] === 0) this.dots.push({ x: x * this.tileSize + 20, y: y * this.tileSize + 20 });
                         }
                     }
                 },
                 update: function() {
-                    // Pacman direction
-                    if (this.keys['ArrowRight']) this.nextDir = 0;
-                    if (this.keys['ArrowDown']) this.nextDir = 1;
-                    if (this.keys['ArrowLeft']) this.nextDir = 2;
-                    if (this.keys['ArrowUp']) this.nextDir = 3;
+                    // Set nextDir from keys (last pressed wins)
+                    if (this.keys['ArrowRight']) this.pacman.nextDir = 0;
+                    if (this.keys['ArrowDown']) this.pacman.nextDir = 1;
+                    if (this.keys['ArrowLeft']) this.pacman.nextDir = 2;
+                    if (this.keys['ArrowUp']) this.pacman.nextDir = 3;
 
-                    // Move if possible
-                    let nx = this.pacman.x, ny = this.pacman.y;
-                    if (this.nextDir === 0) nx += 2;
-                    if (this.nextDir === 1) ny += 2;
-                    if (this.nextDir === 2) nx -= 2;
-                    if (this.nextDir === 3) ny -= 2;
-                    const tx = Math.floor(nx / this.tileSize), ty = Math.floor(ny / this.tileSize);
-                    if (tx >= 0 && tx < 16 && ty >= 0 && ty < 9 && this.map[ty*16 + tx] !== 1) {
-                        this.pacman.dir = this.nextDir;
-                        this.pacman.x = nx;
-                        this.pacman.y = ny;
+                    // Try to turn to nextDir if possible
+                    const offset = this.tileSize / 2;
+                    let testDx = 0, testDy = 0;
+                    if (this.pacman.nextDir === 0) testDx = offset;
+                    else if (this.pacman.nextDir === 2) testDx = -offset;
+                    else if (this.pacman.nextDir === 1) testDy = offset;
+                    else if (this.pacman.nextDir === 3) testDy = -offset;
+                    const testTx = Math.floor((this.pacman.x + testDx) / this.tileSize);
+                    const testTy = Math.floor((this.pacman.y + testDy) / this.tileSize);
+                    if (testTx >= 0 && testTx < 16 && testTy >= 0 && testTy < 9 && this.map[testTy * 16 + testTx] !== 1) {
+                        this.pacman.dir = this.pacman.nextDir;
+                    }
+
+                    // Move in current dir if possible
+                    let moveX = 0, moveY = 0;
+                    if (this.pacman.dir === 0) moveX = 2;
+                    else if (this.pacman.dir === 2) moveX = -2;
+                    else if (this.pacman.dir === 1) moveY = 2;
+                    else if (this.pacman.dir === 3) moveY = -2;
+                    let newX = this.pacman.x + moveX;
+                    let newY = this.pacman.y + moveY;
+                    let newTx = Math.floor(newX / this.tileSize);
+                    let newTy = Math.floor(newY / this.tileSize);
+                    if (newTx >= 0 && newTx < 16 && newTy >= 0 && newTy < 9 && this.map[newTy * 16 + newTx] !== 1) {
+                        this.pacman.x = newX;
+                        this.pacman.y = newY;
                     }
 
                     // Eat dots
                     this.dots.forEach((d, i) => {
                         const dx = this.pacman.x - d.x, dy = this.pacman.y - d.y;
-                        if (Math.sqrt(dx*dx + dy*dy) < 15) {
+                        if (Math.sqrt(dx * dx + dy * dy) < 15) {
                             this.dots.splice(i, 1);
                             this.score += 10;
-                            this.map[Math.floor(d.y / this.tileSize)*16 + Math.floor(d.x / this.tileSize)] = 2;
+                            const dotTx = Math.floor(d.x / this.tileSize);
+                            const dotTy = Math.floor(d.y / this.tileSize);
+                            this.map[dotTy * 16 + dotTx] = 2;
                         }
                     });
 
-                    // Ghosts simple chase
+                    // Ghosts movement
                     this.ghosts.forEach(g => {
-                        const dx = this.pacman.x - g.x, dy = this.pacman.y - g.y;
-                        g.vx = Math.sign(dx) * 1;
-                        g.vy = Math.sign(dy) * 1;
-                        g.x += g.vx;
-                        g.y += g.vy;
-                        // Wrap or simple collision with walls omitted for brevity
+                        // Compute target dir
+                        const dx = this.pacman.x - g.x;
+                        const dy = this.pacman.y - g.y;
+                        let targetDir;
+                        if (Math.abs(dx) >= Math.abs(dy)) {
+                            targetDir = dx > 0 ? 0 : 2;
+                        } else {
+                            targetDir = dy > 0 ? 1 : 3;
+                        }
+
+                        // Try to turn
+                        let testDx = 0, testDy = 0;
+                        if (targetDir === 0) testDx = 10;
+                        else if (targetDir === 2) testDx = -10;
+                        else if (targetDir === 1) testDy = 10;
+                        else if (targetDir === 3) testDy = -10;
+                        const testTx = Math.floor((g.x + testDx) / this.tileSize);
+                        const testTy = Math.floor((g.y + testDy) / this.tileSize);
+                        if (testTx >= 0 && testTx < 16 && testTy >= 0 && testTy < 9 && this.map[testTy * 16 + testTx] !== 1) {
+                            g.dir = targetDir;
+                        }
+
+                        // Move
+                        let gMoveX = 0, gMoveY = 0;
+                        if (g.dir === 0) gMoveX = 1;
+                        else if (g.dir === 2) gMoveX = -1;
+                        else if (g.dir === 1) gMoveY = 1;
+                        else if (g.dir === 3) gMoveY = -1;
+                        let gNewX = g.x + gMoveX;
+                        let gNewY = g.y + gMoveY;
+                        let gNewTx = Math.floor(gNewX / this.tileSize);
+                        let gNewTy = Math.floor(gNewY / this.tileSize);
+                        if (gNewTx >= 0 && gNewTx < 16 && gNewTy >= 0 && gNewTy < 9 && this.map[gNewTy * 16 + gNewTx] !== 1) {
+                            g.x = gNewX;
+                            g.y = gNewY;
+                        }
                     });
 
                     this.pacman.mouth = (this.pacman.mouth + 0.2) % (Math.PI * 2);
@@ -455,10 +544,10 @@
                     // Map
                     for (let y = 0; y < 9; y++) {
                         for (let x = 0; x < 16; x++) {
-                            const val = this.map[y*16 + x];
+                            const val = this.map[y * 16 + x];
                             if (val === 1) {
                                 this.ctx.fillStyle = '#00f';
-                                this.ctx.fillRect(x*this.tileSize, y*this.tileSize, this.tileSize, this.tileSize);
+                                this.ctx.fillRect(x * this.tileSize, y * this.tileSize, this.tileSize, this.tileSize);
                             }
                         }
                     }
@@ -475,7 +564,7 @@
                     this.ctx.translate(this.pacman.x, this.pacman.y);
                     this.ctx.rotate((this.pacman.dir * 90) * Math.PI / 180);
                     this.ctx.beginPath();
-                    this.ctx.arc(0, 0, 20, this.pacman.mouth / 2, -this.pacman.mouth / 2);
+                    this.ctx.arc(0, 0, 20, this.pacman.mouth / 2, -this.pacman.mouth / 2, false);
                     this.ctx.lineTo(0, 0);
                     this.ctx.fill();
                     this.ctx.restore();
@@ -506,12 +595,13 @@
                     this.canvas = canvas;
                     this.ctx = canvas.getContext('2d');
                     document.addEventListener('keydown', (e) => { this.keys[e.key] = true; e.preventDefault(); });
+                    document.addEventListener('keyup', (e) => this.keys[e.key] = false);
                     this.addRandomTile();
                     this.addRandomTile();
                 },
                 addRandomTile: function() {
                     const empty = [];
-                    this.board.forEach((row, y) => row.forEach((val, x) => { if (val === 0) empty.push({x,y}); }));
+                    this.board.forEach((row, y) => row.forEach((val, x) => { if (val === 0) empty.push({x, y}); }));
                     if (empty.length) {
                         const pos = empty[Math.floor(Math.random() * empty.length)];
                         this.board[pos.y][pos.x] = Math.random() > 0.5 ? 2 : 4;
@@ -524,19 +614,29 @@
                         for (let y = 0; y < 4; y++) {
                             let row = this.board[y].filter(n => n !== 0);
                             for (let i = 0; i < row.length - 1; i++) {
-                                if (row[i] === row[i+1]) { row[i] *= 2; this.score += row[i]; row.splice(i+1, 1); moved = true; }
+                                if (row[i] === row[i + 1]) {
+                                    row[i] *= 2;
+                                    this.score += row[i];
+                                    row.splice(i + 1, 1);
+                                    moved = true;
+                                    i--; // Check again after splice
+                                }
                             }
                             while (row.length < 4) row.push(0);
                             newBoard[y] = row;
                         }
                     }
-                    // Similar for other directions - simplified, add right/up/down logic here
-                    // For brevity, only left implemented fully; others similar with rotations
                     if (dir === 'ArrowRight' || dir === 'd') {
                         for (let y = 0; y < 4; y++) {
                             let row = this.board[y].filter(n => n !== 0).reverse();
                             for (let i = 0; i < row.length - 1; i++) {
-                                if (row[i] === row[i+1]) { row[i] *= 2; this.score += row[i]; row.splice(i+1, 1); moved = true; }
+                                if (row[i] === row[i + 1]) {
+                                    row[i] *= 2;
+                                    this.score += row[i];
+                                    row.splice(i + 1, 1);
+                                    moved = true;
+                                    i--;
+                                }
                             }
                             while (row.length < 4) row.push(0);
                             newBoard[y] = row.reverse();
@@ -546,7 +646,13 @@
                         for (let x = 0; x < 4; x++) {
                             let col = [this.board[0][x], this.board[1][x], this.board[2][x], this.board[3][x]].filter(n => n !== 0);
                             for (let i = 0; i < col.length - 1; i++) {
-                                if (col[i] === col[i+1]) { col[i] *= 2; this.score += col[i]; col.splice(i+1, 1); moved = true; }
+                                if (col[i] === col[i + 1]) {
+                                    col[i] *= 2;
+                                    this.score += col[i];
+                                    col.splice(i + 1, 1);
+                                    moved = true;
+                                    i--;
+                                }
                             }
                             while (col.length < 4) col.unshift(0);
                             for (let y = 0; y < 4; y++) newBoard[y][x] = col[y];
@@ -556,10 +662,16 @@
                         for (let x = 0; x < 4; x++) {
                             let col = [this.board[0][x], this.board[1][x], this.board[2][x], this.board[3][x]].filter(n => n !== 0).reverse();
                             for (let i = 0; i < col.length - 1; i++) {
-                                if (col[i] === col[i+1]) { col[i] *= 2; this.score += col[i]; col.splice(i+1, 1); moved = true; }
+                                if (col[i] === col[i + 1]) {
+                                    col[i] *= 2;
+                                    this.score += col[i];
+                                    col.splice(i + 1, 1);
+                                    moved = true;
+                                    i--;
+                                }
                             }
                             while (col.length < 4) col.push(0);
-                            for (let y = 0; y < 4; y++) newBoard[y][x] = col[3-y];
+                            for (let y = 0; y < 4; y++) newBoard[y][x] = col[3 - y];
                         }
                     }
                     this.board = newBoard;
@@ -578,14 +690,14 @@
                         for (let x = 0; x < 4; x++) {
                             const val = this.board[y][x];
                             this.ctx.fillStyle = val ? `hsl(${(Math.log2(val) * 30) % 360}, 70%, 70%)` : '#ccc';
-                            this.ctx.fillRect(x*ts, y*ts, ts, ts);
+                            this.ctx.fillRect(x * ts, y * ts, ts, ts);
                             this.ctx.strokeStyle = '#000';
-                            this.ctx.strokeRect(x*ts, y*ts, ts, ts);
+                            this.ctx.strokeRect(x * ts, y * ts, ts, ts);
                             if (val) {
                                 this.ctx.fillStyle = '#000';
                                 this.ctx.font = 'bold 40px Arial';
                                 this.ctx.textAlign = 'center';
-                                this.ctx.fillText(val, x*ts + 50, y*ts + 65);
+                                this.ctx.fillText(val.toString(), x * ts + 50, y * ts + 65);
                             }
                         }
                     }
@@ -608,7 +720,6 @@
                 currentPlayer: 1, // 1:X, -1:O
                 gameOver: false,
                 winner: 0,
-                keys: {},
                 init: function(canvas) {
                     this.canvas = canvas;
                     this.ctx = canvas.getContext('2d');
@@ -623,6 +734,17 @@
                         this.board[y][x] = this.currentPlayer;
                         this.checkWin();
                         if (!this.gameOver) this.currentPlayer *= -1;
+                        // AI move if O's turn
+                        if (this.currentPlayer === -1 && !this.gameOver) {
+                            const empty = [];
+                            this.board.forEach((row, yy) => row.forEach((cell, xx) => { if (cell === 0) empty.push([yy, xx]); }));
+                            if (empty.length) {
+                                const [ay, ax] = empty[Math.floor(Math.random() * empty.length)];
+                                this.board[ay][ax] = -1;
+                                this.checkWin();
+                                if (!this.gameOver) this.currentPlayer = 1;
+                            }
+                        }
                     }
                 },
                 checkWin: function() {
@@ -632,7 +754,7 @@
                         [[0,0],[1,1],[2,2]], [[0,2],[1,1],[2,0]] // diags
                     ];
                     for (let line of lines) {
-                        const [a,b,c] = line.map(([y,x]) => this.board[y][x]);
+                        const [a, b, c] = line.map(([yy, xx]) => this.board[yy][xx]);
                         if (a === b && b === c && a !== 0) {
                             this.winner = a;
                             this.gameOver = true;
@@ -644,17 +766,7 @@
                     }
                 },
                 update: function() {
-                    // AI simple: random move for O
-                    if (this.currentPlayer === -1 && !this.gameOver && Math.random() < 0.02) { // Occasional AI move
-                        const empty = [];
-                        this.board.forEach((row,y) => row.forEach((cell,x) => { if (cell === 0) empty.push([y,x]); }));
-                        if (empty.length) {
-                            const [y,x] = empty[Math.floor(Math.random() * empty.length)];
-                            this.board[y][x] = -1;
-                            this.checkWin();
-                            if (!this.gameOver) this.currentPlayer = 1;
-                        }
-                    }
+                    // Empty update for animation loop
                 },
                 draw: function() {
                     this.ctx.clearRect(0, 0, 300, 300);
@@ -674,10 +786,11 @@
                             if (cell === 1) {
                                 this.ctx.font = 'bold 80px Arial';
                                 this.ctx.textAlign = 'center';
-                                this.ctx.fillText('X', x*100 + 50, (y+1)*100 - 20);
+                                this.ctx.fillStyle = '#fff';
+                                this.ctx.fillText('X', x * 100 + 50, (y + 1) * 100 - 20);
                             } else if (cell === -1) {
                                 this.ctx.beginPath();
-                                this.ctx.arc(x*100 + 50, y*100 + 50, 30, 0, Math.PI * 2);
+                                this.ctx.arc(x * 100 + 50, y * 100 + 50, 30, 0, Math.PI * 2);
                                 this.ctx.stroke();
                             }
                         });
@@ -712,4 +825,3 @@
     </script>
 </body>
 </html>
-```
