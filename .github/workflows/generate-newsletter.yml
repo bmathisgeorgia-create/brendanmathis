@@ -56,3 +56,6 @@ with open('index.html', 'w') as f:
     f.write(html_template)
 
 print("Newsletter generated and saved to index.html")
+
+
+git add generate_newsletter.py, git commit -m "Add newsletter generation script", git push
