@@ -1,36 +1,58 @@
-name: Generate ICHRA Newsletter
+import os
+from xai_sdk import Client
+from xai_sdk.chat import user, system
+from datetime import datetime, timedelta
+from markdown import markdown
 
-on:
-  schedule:
-    - cron: '0 0 * * 1'  # Every Monday at midnight UTC
-  workflow_dispatch:  # Allows manual trigger
+# Set up the xAI API client
+api_key = os.getenv('XAI_API_KEY')  # Set this in your environment or GitHub secrets
+client = Client(api_key=api_key, timeout=3600)
 
-jobs:
-  generate:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+# Function to generate the ICHRA Newsletter via the API
+def generate_newsletter():
+    today = datetime.now()
+    week_start = today - timedelta(days=today.weekday())
+    week_end = week_start + timedelta(days=6)
+    week_of = f"Week of {week_start.strftime('%B %d')}–{week_end.strftime('%d, %Y')}"
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+    chat = client.chat.create(model="grok-4")
+    chat.append(system("You are Grok, a helpful AI. Generate a professional weekly ICHRA Newsletter with an executive summary followed by a list of articles with summaries and links. Ensure articles are from the current week. Format it in Markdown for easy HTML conversion. Start with the title 'ICHRA Newsletter' and the week."))
+    prompt = f"Generate the ICHRA Newsletter for this week: {week_of}. Include executive summary and list of recent articles with links and summaries, no repetitions."
+    chat.append(user(prompt))
+    response = chat.sample()
+    return response.content, week_of
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install xai-sdk markdown  # Flask not needed for static generation
+# Generate content
+newsletter_md, week_of = generate_newsletter()
+newsletter_html = markdown(newsletter_md, output_format='html5')
 
-      - name: Generate newsletter
-        env:
-          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}  # Add your key in repo secrets
-        run: python generate_newsletter.py
+# HTML template
+html_template = f"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICHRA Newsletter - {week_of}</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }}
+        h1 {{ text-align: center; color: #333; }}
+        h2 {{ color: #555; }}
+        ul {{ list-style-type: none; padding: 0; }}
+        li {{ margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }}
+        a {{ color: #007bff; text-decoration: none; }}
+        a:hover {{ text-decoration: underline; }}
+        p {{ margin: 10px 0; }}
+    </style>
+</head>
+<body>
+    {newsletter_html}
+</body>
+</html>
+"""
 
-      - name: Commit and push changes
-        run: |
-          git config --global user.name 'GitHub Actions'
-          git config --global user.email 'actions@github.com'
-          git add index.html
-          git commit -m "Update ICHRA Newsletter for the week" || echo "No changes to commit"
-          git push
+# Save to index.html
+with open('index.html', 'w') as f:
+    f.write(html_template)
+
+print("Newsletter generated and saved to index.html")
