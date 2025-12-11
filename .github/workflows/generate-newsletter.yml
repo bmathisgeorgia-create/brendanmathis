@@ -1,0 +1,36 @@
+name: Generate ICHRA Newsletter
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'  # Every Monday at midnight UTC
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install xai-sdk markdown  # Flask not needed for static generation
+
+      - name: Generate newsletter
+        env:
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}  # Add your key in repo secrets
+        run: python generate_newsletter.py
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+          git add index.html
+          git commit -m "Update ICHRA Newsletter for the week" || echo "No changes to commit"
+          git push
